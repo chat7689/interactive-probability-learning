@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Rainbet - Chat</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="leaderboard" id="leaderboard" style="display: none;">
+        <h3>🏆 Leaderboard</h3>
+        <div id="leaderboardList">Loading...</div>
+    </div>
+    
+    <div class="main-content">
+        <div class="container">
+            
+            <div class="header">
+                <button class="settings-btn" id="settingsButton" onclick="openSettings()" title="Settings">⚙️</button>
+                <button class="shop-btn" id="shopButton" onclick="navigateToShop()" title="Shop">🛒</button>
+                <button class="games-btn" id="gamesButton" onclick="navigateToGames()" title="Games">🎮</button>
+                <div class="connection-status" id="connectionStatus" title="Connected">🟢</div>
+                <h2 id="chatTitle">School Rainbet</h2>
+                <div class="online-count" id="onlineCount">Loading...</div>
+            </div>
+            
+            <div class="auth-screen" id="authScreen">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('login')">Login</button>
+                    <button class="tab" onclick="switchTab('register')">Register</button>
+                </div>
+                
+                <div class="tab-content active" id="loginTab">
+                    <div class="form-group">
+                        <input type="text" id="loginUsername" placeholder="Username" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="loginPassword" placeholder="Password">
+                    </div>
+                    <button onclick="login()">Login</button>
+                </div>
+                
+                <div class="tab-content" id="registerTab">
+                    <div class="form-group">
+                        <input type="text" id="regUsername" placeholder="Username" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="regPassword" placeholder="Password">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="regConfirm" placeholder="Confirm Password">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="regActivationCode" placeholder="Activation Code (use: code)">
+                    </div>
+                    <button onclick="register()">Create Account</button>
+                </div>
+                
+                <div id="message"></div>
+            </div>
+            
+            <div class="chat-main" id="chatMain">
+                <div class="messages" id="messages"></div>
+                <div class="input-area">
+                    <textarea id="messageInput" class="message-input" placeholder="Type a message... Try /games, /shop, or /admin"></textarea>
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">Close</button>
+            </div>
+            <div class="form-group">
+                <label>Current Username:</label>
+                <input type="text" id="currentUsername" readonly style="background: #f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label>Current Password:</label>
+                <input type="password" id="currentPassword" placeholder="Enter current password">
+            </div>
+            <div class="form-group">
+                <label>New Password:</label>
+                <input type="password" id="newPassword" placeholder="Enter new password">
+            </div>
+            <div class="form-group">
+                <label>Confirm New Password:</label>
+                <input type="password" id="confirmNewPassword" placeholder="Confirm new password">
+            </div>
+            <button onclick="changePassword()">Change Password</button>
+            <button onclick="RainbetUtils.logout()" style="background: #e74c3c; margin-top: 10px; width: 100%;">Logout</button>
+            <div id="settingsMessage"></div>
+        </div>
+    </div>
+
+    <!-- Admin Password Modal -->
+    <div class="modal" id="adminPasswordModal">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <h3 id="adminActionTitle">🔐 Enter Admin Security Code</h3>
+            <div style="position: relative; width: 100%; margin: 15px 0;">
+                <input type="password" id="adminPasswordInput" placeholder="Enter security code (76897689)" style="width: 100%; padding: 12px; box-sizing: border-box; padding-right: 40px;">
+                <span onmouseenter="showPassword('adminPasswordInput')" onmouseleave="hidePassword('adminPasswordInput')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">👁️</span>
+            </div>
+            <div>
+                <button onclick="confirmAdminAction()">Confirm</button>
+                <button onclick="cancelAdminAction()">Cancel</button>
+            </div>
+            <div id="adminPasswordError" class="error"></div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>👨‍💼 Admin Panel</h2>
+                <button class="close-btn" onclick="closeAdmin()">Close</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>💬 Chat Settings</h3>
+                <div class="form-group">
+                    <label>Chat Name:</label>
+                    <input type="text" id="chatNameInput" placeholder="Enter chat name">
+                </div>
+                <button onclick="updateChatName()">Update Chat Name</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>👥 User Management</h3>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="targetUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label>Points Amount:</label>
+                    <input type="number" id="pointAmount" placeholder="Enter amount" min="1">
+                </div>
+                <button onclick="givePointsToUser()">Give Points</button>
+                <button onclick="givePointsToAll()" style="background: #f39c12;">Give 100 Points to All</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>⏱️ User Timeout</h3>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="timeoutUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label>Duration (minutes):</label>
+                    <input type="number" id="timeoutDuration" placeholder="Enter minutes" min="1" max="1440" value="10">
+                </div>
+                <button onclick="timeoutUser()" style="background: #e74c3c;">Timeout User</button>
+                <button onclick="removeTimeout()" style="background: #27ae60;">Remove Timeout</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>🔧 System Actions</h3>
+                <button onclick="clearAllMessages()" style="background: #e74c3c;">Clear All Messages</button>
+                <button onclick="resetAllDailyCredits()" style="background: #e67e22;">Reset Daily Points</button>
+            </div>
+            
+            <div class="admin-section">
+                <h3>🟢 Online Users</h3>
+                <div id="onlineUsersList" style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;"></div>
+            </div>
+            
+            <div class="admin-section">
+                <h3>📊 User Overview</h3>
+                <div id="userPointsList" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getDatabase, ref, set, get, push, onValue, off, serverTimestamp, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAyCOxYlNRn-tveI9G22BHYI8EEpMAEWEI",
+            authDomain: "schoolchat-60b44.firebaseapp.com",
+            databaseURL: "https://schoolchat-60b44-default-rtdb.firebaseio.com",
+            projectId: "schoolchat-60b44",
+            storageBucket: "schoolchat-60b44.firebasestorage.app",
+            messagingSenderId: "209703349541",
+            appId: "1:209703349541:web:d89ba692f5f5c322503ecc",
+            measurementId: "G-S6VLMJHKFF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const analytics = getAnalytics(app);
+
+        // Make Firebase available globally
+        window.firebaseDb = database;
+        window.firebaseRef = ref;
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebasePush = push;
+        window.firebaseOnValue = onValue;
+        window.firebaseOff = off;
+        window.firebaseServerTimestamp = serverTimestamp;
+        window.firebaseOnDisconnect = onDisconnect;
+    </script>
+    <script src="js/utils.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+</html>

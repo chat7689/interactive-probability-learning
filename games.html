@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Rainbet - Games</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/games.css">
+</head>
+<body>
+    <div class="leaderboard" id="leaderboard">
+        <h3>🏆 Leaderboard</h3>
+        <div id="leaderboardList">Loading...</div>
+    </div>
+    
+    <div class="main-content">
+        <div class="container">
+            <div class="offline-notice">
+                🔧 OFFLINE TESTING MODE - Data stored locally only
+            </div>
+            
+            <div class="header">
+                <button class="settings-btn" onclick="RainbetUtils.navigateTo('index.html')" title="Back to Chat">💬</button>
+                <button class="shop-btn" onclick="RainbetUtils.navigateTo('shop.html')" title="Shop">🛒</button>
+                <button class="games-btn active" title="Games">🎮</button>
+                <div class="connection-status" title="Offline Mode"></div>
+                <h2 id="chatTitle">School Rainbet - Games</h2>
+                <div class="online-count">💰 Points: <span id="userPoints">0</span></div>
+            </div>
+            
+            <div class="games-container">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button onclick="RainbetUtils.navigateTo('index.html')" style="background: #3498db; padding: 12px 24px; font-size: 16px;">💬 Back to Chat</button>
+                </div>
+                <div class="games-grid" id="gamesGrid">
+                    <div class="game-card" onclick="showGame('coinflip')">
+                        <h3>🪙 Coin Flip</h3>
+                        <p>Call heads or tails!</p>
+                    </div>
+                    <div class="game-card" onclick="showGame('cups')">
+                        <h3>🥤 Find the Gold</h3>
+                        <p>Follow the gold coin!</p>
+                    </div>
+                    <div class="game-card" onclick="showGame('dice')">
+                        <h3>🎲 Lucky Dice</h3>
+                        <p>Guess the sum!</p>
+                    </div>
+                    <div class="game-card" onclick="showGame('slots')">
+                        <h3>🎰 Fruit Slots</h3>
+                        <p>Match three symbols!</p>
+                    </div>
+                    <div class="game-card" onclick="showGame('blackjack')">
+                        <h3>🃏 Blackjack</h3>
+                        <p>Beat the dealer!</p>
+                    </div>
+                    <div class="game-card" onclick="showGame('lottery')">
+                        <h3>🎫 Number Lottery</h3>
+                        <p>Pick your lucky numbers!</p>
+                    </div>
+                    <div class="game-card" onclick="showGame('mines')">
+                        <h3>💣 Mines</h3>
+                        <p>Avoid the bombs!</p>
+                    </div>
+                </div>
+                
+                <h2 style="text-align: center; color: #3498db; margin: 30px 0 20px 0;">🧠 Skill Games</h2>
+                <div class="games-grid">
+                    <div class="game-card" onclick="showGame('memory')">
+                        <h3>🧠 Memory Match</h3>
+                        <p>Match cards in sequence!</p>
+                        <small>Skill-based • Progressive Levels</small>
+                    </div>
+                    <div class="game-card" onclick="showGame('poker')">
+                        <h3>🃏 5-Card Poker</h3>
+                        <p>Make the best hand!</p>
+                        <small>Skill-based • Card Strategy</small>
+                    </div>
+                    <div class="game-card" onclick="showGame('reaction')">
+                        <h3>⚡ Quick Draw</h3>
+                        <p>Test your reflexes!</p>
+                        <small>Skill-based • Reaction Time</small>
+                    </div>
+                </div>
+                
+                <div id="gameArea" style="display: none;">
+                    <div class="game-area">
+                        <div id="gameContent"></div>
+                        <div class="bet-controls">
+                            <label>💰 Bet Amount:</label>
+                            <input type="number" id="betAmount" class="bet-input" min="1" max="1000" value="10">
+                            <span>points</span>
+                        </div>
+                        <button onclick="backToGames()" style="background: #6c757d;">← Back to Games</button>
+                    </div>
+                </div>
+                
+                <div id="gameResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/games.js"></script>
+</body>
+</html>

@@ -1,0 +1,305 @@
+/* Shop-specific styles */
+.shop-container {
+    padding: 20px;
+}
+
+.points-display { 
+    background: #3498db; 
+    color: white; 
+    padding: 15px; 
+    border-radius: 6px; 
+    text-align: center; 
+    margin-bottom: 20px; 
+    font-size: 18px; 
+    font-weight: 600; 
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.shop-item { 
+    background: #f8f9fa; 
+    padding: 15px; 
+    margin-bottom: 10px; 
+    border-radius: 6px; 
+    border: 1px solid #e9ecef; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.shop-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.shop-item-info { flex: 1; }
+.shop-item-name { 
+    font-weight: 600; 
+    margin-bottom: 5px; 
+    color: #333; 
+    font-size: 14px;
+}
+.shop-item-desc { 
+    font-size: 12px; 
+    color: #666; 
+    line-height: 1.3; 
+}
+.shop-item-price { 
+    font-weight: 600; 
+    color: #3498db; 
+    margin-right: 10px;
+    font-size: 13px;
+}
+
+.buy-btn { 
+    background: #27ae60; 
+    color: white; 
+    border: none; 
+    border-radius: 4px; 
+    padding: 6px 12px; 
+    cursor: pointer; 
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.buy-btn:hover {
+    background: #229954;
+    transform: scale(1.05);
+}
+
+.buy-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.daily-section {
+    margin-top: 20px; 
+    padding-top: 15px; 
+    border-top: 1px solid #ddd;
+    text-align: center;
+}
+
+.daily-credits-btn { 
+    background: #27ae60; 
+    color: white; 
+    border: none; 
+    border-radius: 4px; 
+    padding: 12px 24px; 
+    cursor: pointer; 
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.daily-credits-btn:hover {
+    background: #229954;
+    transform: translateY(-1px);
+}
+
+.daily-credits-btn:disabled { 
+    background: #bdc3c7; 
+    cursor: not-allowed;
+    transform: none;
+}
+
+.shop-btn.active {
+    background: rgba(255,255,255,0.3);
+}
+
+.active-items-section {
+    background: #e8f5e8;
+    border: 1px solid #c3e6cb;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.active-items-section h3 {
+    color: #155724;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.active-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #c3e6cb;
+}
+
+.active-item:last-child {
+    border-bottom: none;
+}
+
+.active-item-name {
+    font-weight: 500;
+    color: #155724;
+}
+
+.active-item-time {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.shop-category {
+    margin-bottom: 25px;
+}
+
+.shop-category h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #3498db;
+    font-size: 18px;
+}
+
+/* Tier System Styling */
+.tier-section {
+    margin-bottom: 25px;
+    border-radius: 8px;
+    padding: 15px;
+    border: 2px solid;
+}
+
+.tier-title {
+    margin: 0 0 15px 0;
+    padding: 8px 15px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Tier 1 - Basic */
+.tier-1 {
+    border-color: #95a5a6;
+    background: #f8f9fa;
+}
+
+.tier-title {
+    background: #95a5a6;
+    color: white;
+}
+
+.tier-1-item {
+    border-left: 4px solid #95a5a6;
+}
+
+.tier-1-btn {
+    background: #95a5a6;
+}
+
+.tier-1-btn:hover {
+    background: #7f8c8d;
+}
+
+/* Tier 2 - Advanced */
+.tier-2 {
+    border-color: #3498db;
+    background: #f0f8ff;
+}
+
+.tier-2 .tier-title {
+    background: #3498db;
+    color: white;
+}
+
+.tier-2-item {
+    border-left: 4px solid #3498db;
+}
+
+.tier-2-btn {
+    background: #3498db;
+}
+
+.tier-2-btn:hover {
+    background: #2980b9;
+}
+
+/* Tier 3 - Premium */
+.tier-3 {
+    border-color: #f39c12;
+    background: #fffbf0;
+}
+
+.tier-3 .tier-title {
+    background: linear-gradient(45deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.tier-3-item {
+    border-left: 4px solid #f39c12;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2);
+}
+
+.tier-3-btn {
+    background: linear-gradient(45deg, #f39c12, #e67e22);
+}
+
+.tier-3-btn:hover {
+    background: linear-gradient(45deg, #e67e22, #d35400);
+    transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .shop-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .shop-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .shop-item-info {
+        width: 100%;
+    }
+    
+    .shop-item-price,
+    .buy-btn {
+        align-self: flex-end;
+    }
+}
+
+/* Extend button and maxed item styles */
+.shop-item-tier {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 3px;
+}
+
+.extend-btn {
+    background: #9b59b6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.extend-btn:hover {
+    background: #8e44ad;
+    transform: scale(1.05);
+}
+
+.maxed-price {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.maxed {
+    opacity: 0.8;
+    background: #f5f5f5;
+}

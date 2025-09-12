@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Rainbet - Shop</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/shop.css">
+</head>
+<body>
+    <div class="leaderboard" id="leaderboard">
+        <h3>🏆 Leaderboard</h3>
+        <div id="leaderboardList">Loading...</div>
+    </div>
+    
+    <div class="main-content">
+        <div class="container">
+            <div class="offline-notice">
+                🔧 OFFLINE TESTING MODE - Data stored locally only
+            </div>
+            
+            <div class="header">
+                <button class="settings-btn" onclick="RainbetUtils.navigateTo('index.html')" title="Back to Chat">💬</button>
+                <button class="shop-btn active" title="Shop">🛒</button>
+                <button class="games-btn" onclick="RainbetUtils.navigateTo('games.html')" title="Games">🎮</button>
+                <div class="connection-status" title="Offline Mode"></div>
+                <h2 id="chatTitle">School Rainbet - Shop</h2>
+                <div class="online-count">💰 Points: <span id="userPoints">0</span></div>
+            </div>
+            
+            <div class="shop-container">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <button onclick="RainbetUtils.navigateTo('index.html')" style="background: #3498db; padding: 12px 24px; font-size: 16px;">💬 Back to Chat</button>
+                </div>
+                <div class="points-display">💰 Your Points: <span id="userShopPoints">0</span></div>
+                
+                <div class="shop-grid" id="shopGrid">
+                    <!-- Shop items will be populated by JavaScript -->
+                </div>
+                
+                <div class="daily-section">
+                    <button class="daily-credits-btn" id="dailyCreditsBtn" onclick="claimDailyCredits()">🎁 Claim Daily Points (50)</button>
+                    <small style="display: block; text-align: center; margin-top: 5px; color: #666;">Available once per day</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/shop.js"></script>
+</body>
+</html>

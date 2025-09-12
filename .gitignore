@@ -1,0 +1,64 @@
+# Windows system files
+NTUSER.*
+ntuser.*
+AppData/
+Contacts/
+Desktop/
+Downloads/
+Favorites/
+Links/
+Music/
+OneDrive/
+Saved Games/
+Searches/
+Videos/
+Application Data/
+Cookies/
+Documents/
+Local Settings/
+My Documents/
+NetHood/
+PrintHood/
+Recent/
+SendTo/
+Start Menu/
+Templates/
+
+# Software directories
+.anaconda/
+.conda/
+.continuum/
+.cursor/
+.ElevatedDiagnostics/
+.Ld9VirtualBox/
+.local/
+.lunarclient/
+.matplotlib/
+.npm-global/
+.trae-aicc/
+.trae/
+.vscode/
+.Wurst encryption/
+anaconda3/
+My project*/
+Practice/
+Sample Scene*/
+Simple game*/
+The Unity Tutorial*/
+weaponball/
+
+# Files
+-1.14-windows.xml
+.zshrc
+.npmrc
+.node_repl_history
+.condarc
+.gitconfig
+OIP.jpg
+download.jpg
+claudesfood2.html
+school-rainbet*.html
+
+# Claude files
+.claude/
+.claude.json*
