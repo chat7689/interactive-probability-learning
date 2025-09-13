@@ -298,6 +298,32 @@ button:disabled {
     display: none !important; /* Force hidden by default */
 }
 
+/* CRITICAL: Hide any admin elements that might escape the modal */
+.admin-section:not(#adminModal .admin-section),
+.admin-group:not(#adminModal .admin-group),
+.admin-content:not(#adminModal .admin-content) {
+    display: none !important; /* Force hide any admin elements outside modal */
+}
+
+/* Ensure admin elements are only visible inside the admin modal */
+#adminModal .admin-section,
+#adminModal .admin-group, 
+#adminModal .admin-content {
+    display: block;
+}
+
+#adminModal.modal[style*="display: block"] .admin-section {
+    display: block !important;
+}
+
+#adminModal.modal[style*="display: block"] .admin-group {
+    display: block !important;
+}
+
+#adminModal.modal[style*="display: block"] .admin-content {
+    display: block !important;
+}
+
 .modal-header { 
     display: flex; 
     justify-content: space-between; 

@@ -233,30 +233,19 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                         </div>
                         <p style="color: #666; font-size: 13px; margin-top: 8px;">⚠️ This will overwrite everyone's current points</p>
                     </div>
-                </div>
-            </div>
                     
                     <div class="admin-group">
                         <h4>⏱️ User Timeout</h4>
-                        <div class="control-grid">
-                            <div>
-                                <div class="form-group">
-                                    <label>Username:</label>
-                                    <input type="text" id="timeoutUsername" placeholder="Enter username">
-                                </div>
-                                <div class="form-group">
-                                    <label>Duration (minutes):</label>
-                                    <input type="number" id="timeoutDuration" placeholder="Enter minutes" min="1" max="1440" value="10">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="button-group">
+                        <div class="simple-form">
+                            <label>Username:</label>
+                            <input type="text" id="timeoutUsername" placeholder="Enter username" style="width: 150px;">
+                            <label>Duration (minutes):</label>
+                            <input type="number" id="timeoutDuration" placeholder="Minutes" min="1" max="1440" value="10" style="width: 100px;">
                             <button onclick="timeoutUser()" style="background: #e74c3c;">Timeout User</button>
                             <button onclick="removeTimeout()" style="background: #27ae60;">Remove Timeout</button>
                         </div>
                     </div>
                 </div>
-            </div>
             
             <div class="admin-section collapsible" id="games-section">
                 <h3>🎮 Games Management</h3>
