@@ -620,7 +620,6 @@ async function sendMessage() {
             return;
         }
         
-        const currentUser = RainbetUtils.getCurrentUser();
         const userPoints = RainbetUtils.getUserPoints();
         
         if (amount > userPoints) {
