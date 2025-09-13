@@ -67,9 +67,6 @@ let onlineUsersListener = null;
 let lastSentMessage = null;
 let lastSentTimestamp = 0;
 let messageSending = false;
-let messagesSent = new Set();
-let recentUserMessages = new Map(); // Track recent messages by user with precise timing
-let lastDisplayedMessages = new Set(); // Track recently displayed message IDs
 let displayedMessageIds = new Set(); // Track which messages we've already displayed
 
 // Security logging function
@@ -308,8 +305,10 @@ async function enterChat() {
     }
 }
 
-// Real-time message listener with simple throttling
+// Real-time message listener with better throttling
 let displayMessagesTimeout = null;
+let lastListenerTrigger = 0;
+
 function setupMessageListener() {
     console.log('Setting up message listener...');
     
@@ -319,23 +318,31 @@ function setupMessageListener() {
     
     const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
     messageListener = window.firebaseOnValue(messagesRef, (snapshot) => {
+        const now = Date.now();
         console.log('Firebase message listener triggered');
         
-        // Only run if we're authenticated and in chat mode
         if (!RainbetUtils.getCurrentUser()) {
             console.log('No current user, skipping message update');
             return;
         }
         
-        // Don't skip during message sending - we want real-time updates
-        // Simple throttling to batch rapid updates
+        // Prevent too frequent updates (minimum 200ms between calls)
+        if (now - lastListenerTrigger < 200) {
+            console.log('Too frequent, skipping listener trigger');
+            return;
+        }
+        
+        lastListenerTrigger = now;
+        
+        // Clear any pending timeout and set a new one
         if (displayMessagesTimeout) {
             clearTimeout(displayMessagesTimeout);
         }
+        
         displayMessagesTimeout = setTimeout(() => {
             console.log('Displaying messages from listener...');
             displayMessages();
-        }, 50); // Very short delay
+        }, 200); // 200ms delay to batch updates
     });
     
     console.log('Message listener set up successfully');
@@ -746,12 +753,15 @@ async function displayMessages() {
     
     const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= messagesDiv.scrollTop + 1;
     
+    // Clear everything and start fresh - this prevents the weird delay issue
+    messagesDiv.innerHTML = '';
+    displayedMessageIds.clear();
+    
     try {
         const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
         const snapshot = await window.firebaseGet(messagesRef);
         const currentUser = RainbetUtils.getCurrentUser();
         
-        // If no current user, don't try to display messages
         if (!currentUser) {
             return;
         }
@@ -767,19 +777,29 @@ async function displayMessages() {
                 return timeA - timeB;
             });
             
-            // Only add new messages that we haven't displayed yet
-            const newMessages = messages.filter(msg => !displayedMessageIds.has(msg.id));
+            // Show last 50 messages
+            const recentMessages = messages.slice(-50);
             
-            // If we have no existing messages, show last 20, otherwise just new ones
-            const messagesToShow = messagesDiv.children.length === 0 ? messages.slice(-20) : newMessages;
+            // Simple duplicate prevention - track by content and user within 2 seconds
+            const seenMessages = new Map();
             
-            for (const msg of messagesToShow) {
-                // Skip messages targeted to other users
+            for (const msg of recentMessages) {
                 if (msg.targetUser && msg.targetUser !== currentUser) {
                     continue;
                 }
                 
-                // Mark as displayed
+                const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
+                const msgKey = `${msg.username}-${msg.message}`;
+                
+                // Skip duplicates within 2 seconds
+                if (seenMessages.has(msgKey)) {
+                    const lastTime = seenMessages.get(msgKey);
+                    if (Math.abs(msgTime - lastTime) < 2000) {
+                        continue;
+                    }
+                }
+                seenMessages.set(msgKey, msgTime);
+                
                 displayedMessageIds.add(msg.id);
                 
                 const messageDiv = document.createElement('div');
@@ -791,41 +811,13 @@ async function displayMessages() {
                 }
                 messageDiv.className = className;
                 
-                let usernameDisplay = msg.username;
-                
-                messageDiv.innerHTML = `<div class="message-user">${RainbetUtils.escapeHtml(usernameDisplay)}</div>` +
+                messageDiv.innerHTML = `<div class="message-user">${RainbetUtils.escapeHtml(msg.username)}</div>` +
                                      `<div>${RainbetUtils.escapeHtml(msg.message)}</div>`;
                 messagesDiv.appendChild(messageDiv);
-            }
-            
-            // Keep only last 100 displayed message IDs to prevent memory issues
-            if (displayedMessageIds.size > 100) {
-                const idsArray = Array.from(displayedMessageIds);
-                displayedMessageIds.clear();
-                idsArray.slice(-50).forEach(id => displayedMessageIds.add(id));
             }
         }
     } catch (error) {
         console.error('Error loading messages:', error);
-        // Fallback to localStorage
-        const messages = JSON.parse(localStorage.getItem('chat_messages') || '[]');
-        const currentUser = RainbetUtils.getCurrentUser();
-        
-        messages.forEach(msg => {
-            const messageDiv = document.createElement('div');
-            let className = 'message';
-            if (msg.username === currentUser) className += ' own';
-            if (msg.isSystem) {
-                className += ' system';
-                if (msg.isWarning) className += ' warning';
-            }
-            messageDiv.className = className;
-            
-            let usernameDisplay = msg.username;
-            messageDiv.innerHTML = `<div class="message-user">${RainbetUtils.escapeHtml(usernameDisplay)}</div>` +
-                                 `<div>${RainbetUtils.escapeHtml(msg.message)}</div>`;
-            messagesDiv.appendChild(messageDiv);
-        });
     }
     
     if (wasAtBottom) {
