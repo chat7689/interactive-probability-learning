@@ -70,8 +70,6 @@ let messageSending = false;
 let messagesSent = new Set();
 let recentUserMessages = new Map(); // Track recent messages by user with precise timing
 let lastDisplayedMessages = new Set(); // Track recently displayed message IDs
-let pendingUserMessage = null; // Store user's message to prevent listener from showing it
-let userMessageDisplayed = false; // Track if user's message was already shown
 
 // Security logging function
 async function logSecurityEvent(eventType, user, action) {
@@ -279,9 +277,8 @@ async function enterChat() {
     }, 30000);
 }
 
-// Real-time message listener with intelligent throttling
+// Real-time message listener with simple throttling
 let displayMessagesTimeout = null;
-let lastMessageListenerTrigger = 0;
 function setupMessageListener() {
     if (messageListener) {
         window.firebaseOff(window.firebaseRef(window.firebaseDb, 'messages'), 'value', messageListener);
@@ -289,30 +286,18 @@ function setupMessageListener() {
     
     const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
     messageListener = window.firebaseOnValue(messagesRef, (snapshot) => {
-        const now = Date.now();
-        
-        // If we're currently sending a message, ignore Firebase updates completely
+        // Skip if currently sending a message to prevent immediate duplicates
         if (messageSending) {
             return;
         }
         
-        // If we just sent a message in the last 5 seconds and it's displayed locally, be very conservative
-        const recentSend = lastSentTimestamp && now - lastSentTimestamp < 5000;
-        const delay = recentSend ? 500 : 100; // Much longer delay if we recently sent
-        
-        // Prevent too frequent updates
-        if (now - lastMessageListenerTrigger < 100) {
-            return;
-        }
-        lastMessageListenerTrigger = now;
-        
-        // Throttle rapid message updates to prevent duplicates
+        // Simple throttling to batch rapid updates
         if (displayMessagesTimeout) {
             clearTimeout(displayMessagesTimeout);
         }
         displayMessagesTimeout = setTimeout(() => {
             displayMessages();
-        }, delay);
+        }, 150); // Short delay to batch updates
     });
 }
 
@@ -342,13 +327,10 @@ function updateOnlineCount(snapshot) {
 // Message functions
 async function sendMessage() {
     const messageInput = document.getElementById('messageInput');
-    if (!messageInput) return; // Element doesn't exist, probably not in chat
-    
     const message = messageInput.value.trim();
     if (!message) return;
     
     const currentUser = RainbetUtils.getCurrentUser();
-    if (!currentUser) return; // Not logged in
     if (await isUserTimedOut(currentUser)) {
         const userRef = window.firebaseRef(window.firebaseDb, `users/${currentUser}`);
         const snapshot = await window.firebaseGet(userRef);
@@ -648,11 +630,11 @@ async function sendMessage() {
         return;
     }
     
-    // Check if this user sent this exact message in the last 5 seconds
+    // Check if this user sent this exact message in the last 3 seconds (simple prevention)
     const userMessageKey = `${currentUser}_${message}`;
     if (recentUserMessages.has(userMessageKey)) {
         const lastMessageTime = recentUserMessages.get(userMessageKey);
-        if (now - lastMessageTime < 5000) { // 5 second cooldown for identical messages
+        if (now - lastMessageTime < 3000) { // 3 second cooldown for identical messages
             return;
         }
     }
@@ -663,23 +645,9 @@ async function sendMessage() {
     recentUserMessages.set(userMessageKey, now);
     lastSentMessage = message;
     lastSentTimestamp = now;
-    pendingUserMessage = {
-        username: currentUser,
-        message: message,
-        timestamp: now
-    };
-    userMessageDisplayed = false;
     
     // Clear input immediately to prevent double-sending
     messageInput.value = '';
-    
-    // Immediately display the user's message locally (before Firebase)
-    try {
-        await displayUserMessageImmediately(currentUser, message, now);
-    } catch (error) {
-        console.error('Error displaying message immediately:', error);
-        // Continue with Firebase send even if local display fails
-    }
     
     // Send message to Firebase
     try {
@@ -693,19 +661,17 @@ async function sendMessage() {
         // Clear sending flag after successful send
         setTimeout(() => {
             messageSending = false;
-            userMessageDisplayed = true;
         }, 1000);
         
-        // Clear tracking after 10 seconds
+        // Clear tracking after 5 seconds
         setTimeout(() => {
             messagesSent.delete(messageKey);
             recentUserMessages.delete(userMessageKey);
-            pendingUserMessage = null;
             if (lastSentMessage === message) {
                 lastSentMessage = null;
                 lastSentTimestamp = 0;
             }
-        }, 10000);
+        }, 5000);
         
     } catch (error) {
         console.error('Error sending message:', error);
@@ -724,62 +690,9 @@ async function sendMessage() {
         
         // Reset sending flag in error case
         messageSending = false;
-        pendingUserMessage = null;
         
         await displayMessages();
     }
-}
-
-// Display user's message immediately without waiting for Firebase
-async function displayUserMessageImmediately(username, message, timestamp) {
-    const messagesDiv = document.getElementById('messages');
-    if (!messagesDiv) {
-        // If messages div doesn't exist, we're probably not in chat yet
-        return;
-    }
-    const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= messagesDiv.scrollTop + 1;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message own'; // Always "own" since this is the current user
-    messageDiv.setAttribute('data-local-message', 'true'); // Mark as local message
-    
-    // Apply user's purchased styles if any
-    try {
-        const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
-        const userSnapshot = await window.firebaseGet(userRef);
-        if (userSnapshot.exists()) {
-            const userData = userSnapshot.val();
-            if (userData && userData.items) {
-                applyMessageStyles(messageDiv, userData.items);
-            }
-        }
-    } catch (error) {
-        // Ignore styling errors
-    }
-    
-    let usernameDisplay = username;
-    try {
-        const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
-        const userSnapshot = await window.firebaseGet(userRef);
-        if (userSnapshot.exists()) {
-            const userData = userSnapshot.val();
-            if (userData && userData.items) {
-                usernameDisplay = getUserDisplayName(username, userData.items);
-            }
-        }
-    } catch (error) {
-        // Ignore display name errors
-    }
-    
-    messageDiv.innerHTML = `<div class="message-user">${RainbetUtils.escapeHtml(usernameDisplay)}</div>` +
-                         `<div>${RainbetUtils.escapeHtml(message)}</div>`;
-    messagesDiv.appendChild(messageDiv);
-    
-    if (wasAtBottom) {
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-    
-    userMessageDisplayed = true;
 }
 
 async function displayMessages() {
@@ -790,13 +703,7 @@ async function displayMessages() {
     }
     
     const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= messagesDiv.scrollTop + 1;
-    
-    // Preserve local user messages that were displayed immediately
-    const localMessages = Array.from(messagesDiv.querySelectorAll('[data-local-message="true"]'));
     messagesDiv.innerHTML = '';
-    
-    // Re-add local messages first
-    localMessages.forEach(msg => messagesDiv.appendChild(msg));
     
     try {
         const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
@@ -822,54 +729,32 @@ async function displayMessages() {
             for (const msg of recentMessages) {
                 const messageKey = `${msg.username}_${msg.message}`;
                 const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
-                const messageId = `${msg.username}_${msg.message}_${msgTime}`;
                 
-                // Skip if we've already displayed this exact message recently
-                if (lastDisplayedMessages.has(messageId)) {
-                    continue;
-                }
-                
-                // For current user's messages, be extra strict about duplicates
-                if (msg.username === currentUser) {
-                    // If this is a pending user message that we already displayed locally, skip it
-                    if (pendingUserMessage && 
-                        pendingUserMessage.username === msg.username && 
-                        pendingUserMessage.message === msg.message &&
-                        userMessageDisplayed) {
-                        continue; // Skip Firebase version since we already showed local version
-                    }
-                    
-                    const userMessageKey = `${currentUser}_${msg.message}`;
-                    if (recentUserMessages.has(userMessageKey)) {
-                        const recentTime = recentUserMessages.get(userMessageKey);
-                        // If this message is very close to what we just sent, and we sent it recently, skip it
-                        if (Math.abs(msgTime - recentTime) < 2000 && Date.now() - recentTime < 8000) {
-                            continue;
-                        }
-                    }
-                }
-                
+                // Simple duplicate prevention - if same user+message exists within 2 seconds, skip
                 if (messageMap.has(messageKey)) {
                     const existingTime = messageMap.get(messageKey);
-                    // If messages are within 2 seconds of each other, it's likely a duplicate
                     if (Math.abs(msgTime - existingTime) < 2000) {
                         continue; // Skip this duplicate
                     }
                 }
                 
+                // For current user's messages, check if we just sent this message
+                if (msg.username === currentUser) {
+                    const userMessageKey = `${currentUser}_${msg.message}`;
+                    if (recentUserMessages.has(userMessageKey)) {
+                        const recentTime = recentUserMessages.get(userMessageKey);
+                        // Skip if this Firebase message is very close to what we just sent
+                        if (Math.abs(msgTime - recentTime) < 1000 && Date.now() - recentTime < 3000) {
+                            continue;
+                        }
+                    }
+                }
+                
                 messageMap.set(messageKey, msgTime);
-                lastDisplayedMessages.add(messageId);
                 filteredMessages.push(msg);
             }
             
             recentMessages = filteredMessages;
-            
-            // Clean up old displayed message IDs (keep only last 100)
-            if (lastDisplayedMessages.size > 100) {
-                const messagesToKeep = Array.from(lastDisplayedMessages).slice(-50);
-                lastDisplayedMessages.clear();
-                messagesToKeep.forEach(id => lastDisplayedMessages.add(id));
-            }
             
             for (const msg of recentMessages) {
                 // Skip messages targeted to other users
