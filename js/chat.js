@@ -249,32 +249,40 @@ async function login() {
 }
 
 async function enterChat() {
-    document.getElementById('authScreen').style.display = 'none';
-    document.getElementById('chatMain').style.display = 'block';
-    document.getElementById('settingsButton').style.display = 'flex';
-    document.getElementById('shopButton').style.display = 'flex';
-    document.getElementById('gamesButton').style.display = 'flex';
-    document.getElementById('leaderboard').style.display = 'block';
-    
-    // Update chat title
-    const settings = await RainbetUtils.getChatSettings();
-    document.getElementById('chatTitle').textContent = settings.chatName;
-    
-    // Setup real-time message listener
-    setupMessageListener();
-    
-    // Setup online users listener
-    setupOnlineUsersListener();
-    
-    await displayMessages();
-    await updateLeaderboard();
-    
-    document.getElementById('messageInput').focus();
-    
-    // Update leaderboard every 30 seconds
-    setInterval(async () => {
+    try {
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('chatMain').style.display = 'block';
+        document.getElementById('settingsButton').style.display = 'flex';
+        document.getElementById('shopButton').style.display = 'flex';
+        document.getElementById('gamesButton').style.display = 'flex';
+        document.getElementById('leaderboard').style.display = 'block';
+        
+        // Update chat title
+        const settings = await RainbetUtils.getChatSettings();
+        document.getElementById('chatTitle').textContent = settings.chatName;
+        
+        // Setup real-time message listener only after we're fully in chat
+        setupMessageListener();
+        
+        // Setup online users listener
+        setupOnlineUsersListener();
+        
+        await displayMessages();
         await updateLeaderboard();
-    }, 30000);
+        
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.focus();
+        }
+        
+        // Update leaderboard every 30 seconds
+        setInterval(async () => {
+            await updateLeaderboard();
+        }, 30000);
+    } catch (error) {
+        console.error('Error entering chat:', error);
+        // Don't prevent login from working if there's an error in enterChat
+    }
 }
 
 // Real-time message listener with simple throttling
@@ -286,6 +294,11 @@ function setupMessageListener() {
     
     const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
     messageListener = window.firebaseOnValue(messagesRef, (snapshot) => {
+        // Only run if we're authenticated and in chat mode
+        if (!RainbetUtils.getCurrentUser()) {
+            return;
+        }
+        
         // Skip if currently sending a message to prevent immediate duplicates
         if (messageSending) {
             return;
@@ -710,6 +723,11 @@ async function displayMessages() {
         const snapshot = await window.firebaseGet(messagesRef);
         const currentUser = RainbetUtils.getCurrentUser();
         
+        // If no current user, don't try to display messages
+        if (!currentUser) {
+            return;
+        }
+        
         if (snapshot.exists()) {
             const messagesData = snapshot.val();
             const messages = Object.values(messagesData).sort((a, b) => {
@@ -724,7 +742,6 @@ async function displayMessages() {
             // Enhanced duplicate detection and removal
             const messageMap = new Map();
             const filteredMessages = [];
-            const currentUser = RainbetUtils.getCurrentUser();
             
             for (const msg of recentMessages) {
                 const messageKey = `${msg.username}_${msg.message}`;
