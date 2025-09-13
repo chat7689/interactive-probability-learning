@@ -800,6 +800,8 @@ async function displayMessages() {
             let displayedCount = 0;
             
             for (const msg of recentMessages) {
+                console.log('Processing message:', msg); // Debug: see full message structure
+                
                 if (msg.targetUser && msg.targetUser !== currentUser) {
                     continue;
                 }
