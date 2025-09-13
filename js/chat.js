@@ -3,6 +3,22 @@ let pendingAdminAction = null;
 let messageListener = null;
 let onlineUsersListener = null;
 
+// Security logging function
+async function logSecurityEvent(eventType, user, action) {
+    try {
+        const securityRef = window.firebaseRef(window.firebaseDb, 'security_logs');
+        await window.firebasePush(securityRef, {
+            event: eventType,
+            user: user,
+            action: action,
+            timestamp: new Date().toISOString(),
+            ip: 'unknown' // Could be enhanced with real IP detection
+        });
+    } catch (error) {
+        console.error('Failed to log security event:', error);
+    }
+}
+
 // Navigation functions
 function navigateToGames() {
     if (!RainbetUtils.isAuthenticated()) {
@@ -266,6 +282,8 @@ async function sendMessage() {
 • /give <username> <amount> - Give points to another user
 • /admin - Request admin status (if available)
 • /adminpanel - Open admin panel (admin only)
+• /who verified - List verified admin users (admin only)
+• /security log - View security logs (admin only)
 
 📖 Game Types Available:
 • 🪙 Coin Flip - Guess heads or tails
@@ -284,6 +302,87 @@ async function sendMessage() {
 • Extend: Prolong item duration for 75% of max price
         `.trim();
         await RainbetUtils.addSystemMessage(helpText);
+        messageInput.value = '';
+        return;
+    }
+    
+    if (message === '/who verified' || message === '/verified') {
+        if (!RainbetUtils.isCurrentUserAdmin) {
+            RainbetUtils.addSystemMessage('Access denied. Admin privileges required.');
+            // Log unauthorized access attempt
+            logSecurityEvent('UNAUTHORIZED_ADMIN_COMMAND', RainbetUtils.getCurrentUser(), '/who verified');
+            messageInput.value = '';
+            return;
+        }
+        
+        try {
+            const accountsRef = window.firebaseRef(window.firebaseDb, 'accounts');
+            const snapshot = await window.firebaseGet(accountsRef);
+            
+            if (snapshot.exists()) {
+                const accounts = snapshot.val();
+                const verifiedUsers = [];
+                
+                for (const [username, data] of Object.entries(accounts)) {
+                    if (data.isAdmin) {
+                        verifiedUsers.push(`👤 ${username} (Admin)`);
+                    }
+                }
+                
+                if (verifiedUsers.length > 0) {
+                    const verifiedList = `🔐 Verified Users:\n${verifiedUsers.join('\n')}`;
+                    await RainbetUtils.addSystemMessage(verifiedList);
+                } else {
+                    await RainbetUtils.addSystemMessage('No verified users found.');
+                }
+                
+                // Log successful admin command
+                logSecurityEvent('ADMIN_COMMAND_SUCCESS', RainbetUtils.getCurrentUser(), '/who verified');
+            } else {
+                await RainbetUtils.addSystemMessage('No user accounts found.');
+            }
+        } catch (error) {
+            console.error('Error fetching verified users:', error);
+            await RainbetUtils.addSystemMessage('Error retrieving verified users list.');
+        }
+        
+        messageInput.value = '';
+        return;
+    }
+    
+    if (message === '/security log' || message === '/seclog') {
+        if (!RainbetUtils.isCurrentUserAdmin) {
+            RainbetUtils.addSystemMessage('Access denied. Admin privileges required.');
+            logSecurityEvent('UNAUTHORIZED_SECURITY_ACCESS', RainbetUtils.getCurrentUser(), '/security log');
+            messageInput.value = '';
+            return;
+        }
+        
+        try {
+            const securityRef = window.firebaseRef(window.firebaseDb, 'security_logs');
+            const snapshot = await window.firebaseGet(securityRef);
+            
+            if (snapshot.exists()) {
+                const logs = snapshot.val();
+                const recentLogs = Object.values(logs)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, 10);
+                
+                const logText = recentLogs.map(log => 
+                    `⚠️ ${log.event} | User: ${log.user} | Action: ${log.action} | ${new Date(log.timestamp).toLocaleString()}`
+                ).join('\n');
+                
+                await RainbetUtils.addSystemMessage(`🔒 Security Log (Last 10 events):\n${logText}`);
+            } else {
+                await RainbetUtils.addSystemMessage('No security logs found.');
+            }
+            
+            logSecurityEvent('SECURITY_LOG_ACCESS', RainbetUtils.getCurrentUser(), '/security log');
+        } catch (error) {
+            console.error('Error fetching security logs:', error);
+            await RainbetUtils.addSystemMessage('Error retrieving security logs.');
+        }
+        
         messageInput.value = '';
         return;
     }
@@ -655,11 +754,17 @@ function requestAdminStatus() {
 async function confirmAdminAction() {
     const password = document.getElementById('adminPasswordInput').value.trim();
     const errorDiv = document.getElementById('adminPasswordError');
+    const currentUser = RainbetUtils.getCurrentUser();
     
-    if (password !== '76897689') {
-        errorDiv.textContent = 'Incorrect security code';
+    if (password !== '43217689') {
+        errorDiv.textContent = 'Incorrect security code. Access denied.';
+        // Log failed admin authentication attempt
+        logSecurityEvent('FAILED_ADMIN_AUTH', currentUser, `Attempted code: ${password.substring(0, 2)}***`);
         return;
     }
+    
+    // Log successful admin authentication
+    logSecurityEvent('SUCCESSFUL_ADMIN_AUTH', currentUser, 'Admin privileges granted');
     
     if (pendingAdminAction === 'requestAdmin') {
         try {
