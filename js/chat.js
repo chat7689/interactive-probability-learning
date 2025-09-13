@@ -768,6 +768,9 @@ async function displayMessages() {
     messagesDiv.innerHTML = '';
     displayedMessageIds.clear();
     
+    // Force scroll to stay at bottom during rebuild to prevent jumping
+    const shouldStayAtBottom = wasAtBottom;
+    
     try {
         const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
         const snapshot = await window.firebaseGet(messagesRef);
@@ -828,8 +831,18 @@ async function displayMessages() {
                 messageDiv.className = className;
                 
                 // Format timestamp
-                const timestamp = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || Date.now();
+                console.log('Message timestamp:', msg.timestamp, typeof msg.timestamp);
+                let timestamp;
+                if (msg.timestamp && typeof msg.timestamp === 'object' && msg.timestamp.seconds) {
+                    timestamp = msg.timestamp.seconds * 1000;
+                } else if (msg.timestamp && typeof msg.timestamp === 'number') {
+                    timestamp = msg.timestamp;
+                } else {
+                    timestamp = Date.now();
+                }
+                console.log('Processed timestamp:', timestamp);
                 const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                console.log('Time string:', timeStr);
                 
                 messageDiv.innerHTML = `<div class="message-header">
                     <span class="message-user">${RainbetUtils.escapeHtml(msg.username)}</span>
@@ -845,8 +858,12 @@ async function displayMessages() {
         console.error('Error loading messages:', error);
     }
     
-    if (wasAtBottom) {
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // Always scroll to bottom if user was at bottom (prevents jumping)
+    if (shouldStayAtBottom) {
+        // Use requestAnimationFrame to ensure DOM is updated before scrolling
+        requestAnimationFrame(() => {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
     }
 }
 
