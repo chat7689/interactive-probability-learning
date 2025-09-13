@@ -278,6 +278,24 @@ button:disabled {
     overflow-y: auto; 
     border: 1px solid #ddd;
     position: relative;
+    box-sizing: border-box;
+}
+
+/* Ensure admin modal takes full available width and is properly hidden */
+#adminModal {
+    display: none !important; /* Force hidden by default */
+}
+
+#adminModal .modal-content {
+    width: 95%;
+    max-width: 900px;
+    margin: 20px auto;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#adminPasswordModal {
+    display: none !important; /* Force hidden by default */
 }
 
 .modal-header { 

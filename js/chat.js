@@ -952,7 +952,19 @@ function cancelAdminAction() {
 }
 
 function openAdmin() {
-    document.getElementById('adminModal').style.display = 'block';
+    // CRITICAL SECURITY CHECK - Only allow admin users
+    if (!RainbetUtils.isCurrentUserAdmin) {
+        RainbetUtils.addSystemMessage('Access denied. Admin privileges required.');
+        logSecurityEvent('UNAUTHORIZED_ADMIN_PANEL_ACCESS', RainbetUtils.getCurrentUser(), 'Attempted to open admin panel without privileges');
+        return;
+    }
+    
+    // Initialize admin panel data
+    refreshQuickStats();
+    loadCurrentTaxSettings();
+    initializeAdminCollapsible();
+    
+    document.getElementById('adminModal').style.setProperty('display', 'block', 'important');
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
     
     // Add event listeners to prevent background scrolling
@@ -995,7 +1007,7 @@ function closeAdmin() {
     adminModal.removeEventListener('wheel', adminWheelHandler);
     adminModal.removeEventListener('touchmove', adminTouchHandler);
     
-    adminModal.style.display = 'none';
+    adminModal.style.setProperty('display', 'none', 'important');
     document.body.style.overflow = 'auto'; // Restore background scrolling
 }
 
