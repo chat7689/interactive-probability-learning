@@ -281,13 +281,13 @@ async function enterChat() {
         const settings = await RainbetUtils.getChatSettings();
         document.getElementById('chatTitle').textContent = settings.chatName;
         
-        // Setup real-time message listener only after we're fully in chat
+        // Setup real-time message listener only after we're fully in chat  
         setupMessageListener();
         
         // Setup online users listener
         setupOnlineUsersListener();
         
-        await displayMessages();
+        // Don't call displayMessages here - let the Firebase listener handle it
         await updateLeaderboard();
         
         const messageInput = document.getElementById('messageInput');
@@ -1435,6 +1435,10 @@ async function loadUserPointsList() {
 
 async function loadOnlineUsersList() {
     const onlineUsersList = document.getElementById('onlineUsersList');
+    if (!onlineUsersList) {
+        console.warn('onlineUsersList element not found');
+        return;
+    }
     onlineUsersList.innerHTML = '';
     
     try {
