@@ -965,6 +965,89 @@ button:disabled {
     100% { transform: scale(1); }
 }
 
+/* New Gambling Games Styles */
+.roulette-wheel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.roulette-number {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #2c3e50;
+    border: 3px solid #34495e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+}
+
+.bet-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.3s ease;
+}
+
+.bet-btn:hover {
+    background: #2980b9;
+}
+
+.baccarat-table {
+    background: #2c3e50;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.baccarat-hands {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.hand {
+    background: #34495e;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.hand h4 {
+    margin: 0 0 10px 0;
+    color: #ecf0f1;
+}
+
+.crash-display {
+    text-align: center;
+    background: #2c3e50;
+    padding: 30px;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.crash-multiplier {
+    font-size: 48px;
+    font-weight: bold;
+    color: #27ae60;
+    margin-bottom: 10px;
+    font-family: 'Courier New', monospace;
+}
+
+.crash-status {
+    font-size: 16px;
+    color: #ecf0f1;
+}
+
 @media (max-width: 768px) {
     body {
         flex-direction: column;
@@ -1021,5 +1104,25 @@ button:disabled {
     .reaction-circle {
         width: 120px;
         height: 120px;
+    }
+    
+    .roulette-number {
+        width: 60px;
+        height: 60px;
+        font-size: 18px;
+    }
+    
+    .baccarat-hands {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .crash-multiplier {
+        font-size: 32px;
+    }
+    
+    .bet-btn {
+        font-size: 10px;
+        padding: 6px 8px;
     }
 }

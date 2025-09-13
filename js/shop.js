@@ -406,18 +406,38 @@ function generateShopItemsHtml() {
     }).join('');
 }
 
+// Navigation function for global access
+function goBack() {
+    RainbetUtils.navigateTo('index.html');
+}
+
+// Make goBack available globally
+window.goBack = goBack;
+
 // Initialize shop page
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!RainbetUtils.requireAuth()) return;
+    
+    // Wait for Firebase to be available
+    let attempts = 0;
+    while (!window.firebaseDb && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
     
     updateUserPoints();
     updateLeaderboard();
     checkActiveItems();
     checkDailyCreditsButton();
     
-    // Update chat title
-    const settings = RainbetUtils.getChatSettings();
-    document.getElementById('chatTitle').textContent = settings.chatName + ' - Shop';
+    // Update chat title properly with async call
+    try {
+        const settings = await RainbetUtils.getChatSettings();
+        document.getElementById('chatTitle').textContent = (settings?.chatName || 'School Rainbet') + ' - Shop';
+    } catch (error) {
+        console.error('Error loading chat settings:', error);
+        document.getElementById('chatTitle').textContent = 'School Rainbet - Shop';
+    }
     
     // Refresh active items and leaderboard every minute
     setInterval(() => {

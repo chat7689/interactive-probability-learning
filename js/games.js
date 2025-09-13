@@ -103,6 +103,15 @@ function showGame(gameType) {
         case 'reaction':
             setupReaction(gameContent);
             break;
+        case 'roulette':
+            setupRoulette(gameContent);
+            break;
+        case 'baccarat':
+            setupBaccarat(gameContent);
+            break;
+        case 'crash':
+            setupCrash(gameContent);
+            break;
     }
 }
 
@@ -1223,16 +1232,282 @@ function startReactionGame() {
     document.getElementById('reactionStartBtn').style.display = 'none';
 }
 
+// Roulette Game
+function setupRoulette(container) {
+    container.innerHTML = `
+        <h3>🎡 Roulette</h3>
+        <p>Place your bet and spin the wheel!</p>
+        <div id="rouletteWheel" class="roulette-wheel">
+            <div class="roulette-number" id="rouletteResult">?</div>
+        </div>
+        <div class="roulette-bets" style="margin: 20px 0;">
+            <h4>Place Your Bet:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <button class="bet-btn" onclick="setRouletteBet('red')" id="betRed">🔴 Red (2x)</button>
+                <button class="bet-btn" onclick="setRouletteBet('black')" id="betBlack">⚫ Black (2x)</button>
+                <button class="bet-btn" onclick="setRouletteBet('green')" id="betGreen">🟢 Green (14x)</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <label>Or bet on number (0-36): </label>
+                <input type="number" id="rouletteNumber" min="0" max="36" placeholder="Number">
+                <button onclick="setRouletteBet('number')" class="bet-btn">Bet Number (35x)</button>
+            </div>
+        </div>
+        <button class="game-btn" onclick="spinRoulette()" id="spinBtn" disabled>Spin Wheel</button>
+        <div id="rouletteStatus"></div>
+    `;
+}
+
+let rouletteBet = null;
+let rouletteBetType = null;
+
+function setRouletteBet(type) {
+    rouletteBetType = type;
+    if (type === 'number') {
+        const number = parseInt(document.getElementById('rouletteNumber').value);
+        if (isNaN(number) || number < 0 || number > 36) {
+            alert('Please enter a valid number (0-36)');
+            return;
+        }
+        rouletteBet = number;
+    } else {
+        rouletteBet = type;
+    }
+    
+    document.getElementById('spinBtn').disabled = false;
+    document.getElementById('rouletteStatus').innerHTML = `Bet placed on: ${type === 'number' ? 'Number ' + rouletteBet : rouletteBet.toUpperCase()}`;
+}
+
+function spinRoulette() {
+    if (!rouletteBet || gameInProgress) return;
+    
+    gameInProgress = true;
+    const betAmount = parseInt(document.getElementById('betAmount').value);
+    
+    // Generate random number 0-36
+    const result = Math.floor(Math.random() * 37);
+    const isRed = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(result);
+    const isBlack = result !== 0 && !isRed;
+    
+    // Animate the wheel
+    document.getElementById('rouletteResult').textContent = result;
+    document.getElementById('rouletteResult').style.color = result === 0 ? 'green' : (isRed ? 'red' : 'black');
+    
+    let won = false;
+    let multiplier = 1;
+    
+    if (rouletteBetType === 'red' && isRed) {
+        won = true;
+        multiplier = 2;
+    } else if (rouletteBetType === 'black' && isBlack) {
+        won = true;
+        multiplier = 2;
+    } else if (rouletteBetType === 'green' && result === 0) {
+        won = true;
+        multiplier = 14;
+    } else if (rouletteBetType === 'number' && rouletteBet === result) {
+        won = true;
+        multiplier = 35;
+    }
+    
+    const color = result === 0 ? '🟢' : (isRed ? '🔴' : '⚫');
+    showGameResult(won, won ? 'Winner!' : 'Try Again!', `Ball landed on ${color} ${result}`, multiplier);
+    
+    gameInProgress = false;
+    rouletteBet = null;
+    rouletteBetType = null;
+    document.getElementById('spinBtn').disabled = true;
+}
+
+// Baccarat Game
+function setupBaccarat(container) {
+    container.innerHTML = `
+        <h3>🂠 Baccarat</h3>
+        <p>Bet on Player, Banker, or Tie!</p>
+        <div class="baccarat-table">
+            <div class="baccarat-hands">
+                <div class="hand">
+                    <h4>👤 Player</h4>
+                    <div id="playerCards">Ready</div>
+                    <div id="playerTotal">-</div>
+                </div>
+                <div class="hand">
+                    <h4>🏦 Banker</h4>
+                    <div id="bankerCards">Ready</div>
+                    <div id="bankerTotal">-</div>
+                </div>
+            </div>
+        </div>
+        <div class="baccarat-bets" style="margin: 20px 0;">
+            <h4>Place Your Bet:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <button class="bet-btn" onclick="setBaccaratBet('player')">👤 Player (2x)</button>
+                <button class="bet-btn" onclick="setBaccaratBet('banker')">🏦 Banker (1.95x)</button>
+                <button class="bet-btn" onclick="setBaccaratBet('tie')">🤝 Tie (8x)</button>
+            </div>
+        </div>
+        <button class="game-btn" onclick="dealBaccarat()" id="baccaratDealBtn" disabled>Deal Cards</button>
+        <div id="baccaratStatus"></div>
+    `;
+}
+
+let baccaratBet = null;
+
+function setBaccaratBet(type) {
+    baccaratBet = type;
+    document.getElementById('baccaratDealBtn').disabled = false;
+    document.getElementById('baccaratStatus').innerHTML = `Bet placed on: ${type.toUpperCase()}`;
+}
+
+function dealBaccarat() {
+    if (!baccaratBet || gameInProgress) return;
+    
+    gameInProgress = true;
+    const betAmount = parseInt(document.getElementById('betAmount').value);
+    
+    // Deal cards (simplified - just calculate totals)
+    const playerCard1 = Math.floor(Math.random() * 9) + 1;
+    const playerCard2 = Math.floor(Math.random() * 9) + 1;
+    const bankerCard1 = Math.floor(Math.random() * 9) + 1;
+    const bankerCard2 = Math.floor(Math.random() * 9) + 1;
+    
+    const playerTotal = (playerCard1 + playerCard2) % 10;
+    const bankerTotal = (bankerCard1 + bankerCard2) % 10;
+    
+    document.getElementById('playerCards').innerHTML = `${playerCard1}, ${playerCard2}`;
+    document.getElementById('playerTotal').innerHTML = `Total: ${playerTotal}`;
+    document.getElementById('bankerCards').innerHTML = `${bankerCard1}, ${bankerCard2}`;
+    document.getElementById('bankerTotal').innerHTML = `Total: ${bankerTotal}`;
+    
+    let won = false;
+    let multiplier = 1;
+    let result = '';
+    
+    if (playerTotal > bankerTotal) {
+        result = 'Player Wins!';
+        if (baccaratBet === 'player') { won = true; multiplier = 2; }
+    } else if (bankerTotal > playerTotal) {
+        result = 'Banker Wins!';
+        if (baccaratBet === 'banker') { won = true; multiplier = 1.95; }
+    } else {
+        result = 'Tie!';
+        if (baccaratBet === 'tie') { won = true; multiplier = 8; }
+    }
+    
+    showGameResult(won, result, `Player: ${playerTotal}, Banker: ${bankerTotal}`, multiplier);
+    
+    gameInProgress = false;
+    baccaratBet = null;
+    document.getElementById('baccaratDealBtn').disabled = true;
+}
+
+// Crash Game
+function setupCrash(container) {
+    container.innerHTML = `
+        <h3>📈 Crash</h3>
+        <p>Watch the multiplier rise and cash out before it crashes!</p>
+        <div class="crash-display">
+            <div id="crashMultiplier" class="crash-multiplier">1.00x</div>
+            <div id="crashStatus" class="crash-status">Click Start to begin</div>
+        </div>
+        <div style="margin: 20px 0;">
+            <button class="game-btn" onclick="startCrash()" id="crashStartBtn">Start Round</button>
+            <button class="game-btn" onclick="cashOut()" id="cashOutBtn" disabled style="background: #27ae60;">💰 Cash Out</button>
+        </div>
+        <div id="crashResult"></div>
+    `;
+}
+
+let crashMultiplier = 1;
+let crashActive = false;
+let crashInterval = null;
+let crashPoint = 1;
+
+function startCrash() {
+    if (gameInProgress) return;
+    
+    gameInProgress = true;
+    crashActive = true;
+    crashMultiplier = 1;
+    
+    // Random crash point between 1.1x and 10x
+    crashPoint = 1 + Math.random() * 9;
+    
+    document.getElementById('crashStartBtn').disabled = true;
+    document.getElementById('cashOutBtn').disabled = false;
+    document.getElementById('crashStatus').textContent = 'Rising... Cash out anytime!';
+    document.getElementById('crashResult').innerHTML = '';
+    
+    crashInterval = setInterval(() => {
+        crashMultiplier += 0.01;
+        document.getElementById('crashMultiplier').textContent = crashMultiplier.toFixed(2) + 'x';
+        
+        if (crashMultiplier >= crashPoint) {
+            // Crash!
+            clearInterval(crashInterval);
+            crashActive = false;
+            document.getElementById('crashMultiplier').textContent = '💥 CRASHED!';
+            document.getElementById('crashStatus').textContent = `Crashed at ${crashPoint.toFixed(2)}x`;
+            
+            if (gameInProgress) {
+                // Player didn't cash out in time
+                const betAmount = parseInt(document.getElementById('betAmount').value);
+                showGameResult(false, 'Crashed!', `You didn't cash out in time! Crashed at ${crashPoint.toFixed(2)}x`, 1);
+            }
+            
+            resetCrash();
+        }
+    }, 100);
+}
+
+function cashOut() {
+    if (!crashActive || !gameInProgress) return;
+    
+    clearInterval(crashInterval);
+    crashActive = false;
+    gameInProgress = false;
+    
+    const betAmount = parseInt(document.getElementById('betAmount').value);
+    const multiplier = crashMultiplier;
+    
+    document.getElementById('crashStatus').textContent = `Cashed out at ${multiplier.toFixed(2)}x!`;
+    showGameResult(true, 'Cashed Out!', `You cashed out at ${multiplier.toFixed(2)}x`, multiplier);
+    
+    resetCrash();
+}
+
+function resetCrash() {
+    setTimeout(() => {
+        gameInProgress = false;
+        document.getElementById('crashStartBtn').disabled = false;
+        document.getElementById('cashOutBtn').disabled = true;
+        document.getElementById('crashMultiplier').textContent = '1.00x';
+        document.getElementById('crashStatus').textContent = 'Click Start to begin';
+    }, 3000);
+}
+
 // Initialize games page
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     if (!RainbetUtils.requireAuth()) return;
+    
+    // Wait for Firebase to be available
+    let attempts = 0;
+    while (!window.firebaseDb && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
     
     updateUserPoints();
     updateLeaderboard();
     
-    // Update chat title
-    const settings = RainbetUtils.getChatSettings();
-    document.getElementById('chatTitle').textContent = settings.chatName + ' - Games';
+    // Update chat title properly with async call
+    try {
+        const settings = await RainbetUtils.getChatSettings();
+        document.getElementById('chatTitle').textContent = (settings?.chatName || 'School Rainbet') + ' - Games';
+    } catch (error) {
+        console.error('Error loading chat settings:', error);
+        document.getElementById('chatTitle').textContent = 'School Rainbet - Games';
+    }
     
     // Update leaderboard every 30 seconds
     setInterval(() => {

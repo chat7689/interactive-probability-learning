@@ -323,6 +323,12 @@ async function sendMessage() {
 • 🃏 Blackjack - Beat the dealer
 • 🎫 Number Lottery - Pick lucky numbers
 • 💣 Mines - Avoid the bombs
+• 🧠 Memory Match - Progressive skill game
+• 🃏 5-Card Poker - Make the best hand
+• ⚡ Quick Draw - Test your reflexes
+• 🎡 Roulette - Classic casino wheel
+• 🂠 Baccarat - Player vs Banker
+• 📈 Crash - Cash out before it crashes
 
 💰 Shop Features:
 • Text Effects: Large text, bold text, highlights
@@ -1106,7 +1112,8 @@ async function loadGameToggles() {
         const defaultToggles = {
             coinflip: true, cups: true, dice: true, slots: true,
             blackjack: true, lottery: true, mines: true,
-            memory: true, poker: true, reaction: true
+            memory: true, poker: true, reaction: true,
+            roulette: true, baccarat: true, crash: true
         };
         
         const toggles = snapshot.exists() ? snapshot.val() : defaultToggles;
@@ -1128,7 +1135,8 @@ async function loadGameMultipliers() {
         const defaultMultipliers = {
             coinflip: 1.9, cups: 2.85, dice: 3.0, slots: 4.0,
             blackjack: 1.9, lottery: 10.0, mines: 1.2,
-            memory: 3.5, poker: 2.5, reaction: 2.0
+            memory: 3.5, poker: 2.5, reaction: 2.0,
+            roulette: 2.0, baccarat: 2.0, crash: 2.0
         };
         
         const multipliers = snapshot.exists() ? snapshot.val() : defaultMultipliers;
@@ -1145,7 +1153,7 @@ async function loadGameMultipliers() {
 async function updateAllGameToggles() {
     try {
         const toggles = {};
-        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction'].forEach(game => {
+        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'].forEach(game => {
             const checkbox = document.getElementById(`toggle_${game}`);
             if (checkbox) toggles[game] = checkbox.checked;
         });
@@ -1171,7 +1179,7 @@ async function setGlobalMultiplier() {
     }
     
     try {
-        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction'];
+        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'];
         const multipliers = {};
         
         games.forEach(game => {
@@ -1195,7 +1203,7 @@ async function setGlobalMultiplier() {
 async function updateIndividualMultipliers() {
     try {
         const multipliers = {};
-        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction'];
+        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'];
         
         games.forEach(game => {
             const input = document.getElementById(`mult_${game}`);
