@@ -931,6 +931,73 @@ async function changePassword() {
     }
 }
 
+// TOBIN MALONE - Delete Account Functionality
+async function deleteAccount() {
+    const currentUser = RainbetUtils.getCurrentUser();
+    
+    // Multiple confirmations for account deletion
+    const firstConfirm = confirm(`⚠️ WARNING ⚠️\n\nAre you ABSOLUTELY sure you want to delete your account "${currentUser}"?\n\nThis will:\n• Delete ALL your data permanently\n• Remove ALL your points and items\n• Remove ALL your messages\n• Cannot be undone\n\nClick OK to continue or Cancel to abort.`);
+    
+    if (!firstConfirm) {
+        return;
+    }
+    
+    const secondConfirm = confirm(`🚨 FINAL WARNING 🚨\n\nThis is your LAST CHANCE to cancel!\n\nDeleting account: ${currentUser}\n\nThis action is PERMANENT and IRREVERSIBLE!\n\nType your username to confirm deletion:\n\nClick OK only if you're 100% certain!`);
+    
+    if (!secondConfirm) {
+        return;
+    }
+    
+    // Ask for password confirmation
+    const password = prompt(`🔐 Password Verification Required\n\nTo delete account "${currentUser}", please enter your current password:`);
+    
+    if (!password) {
+        RainbetUtils.showMessage('Account deletion cancelled - no password provided', false, 'settingsMessage');
+        return;
+    }
+    
+    try {
+        // Verify password first
+        const accountRef = window.firebaseRef(window.firebaseDb, `accounts/${currentUser}`);
+        const accountSnapshot = await window.firebaseGet(accountRef);
+        
+        if (!accountSnapshot.exists()) {
+            RainbetUtils.showMessage('Account not found', true, 'settingsMessage');
+            return;
+        }
+        
+        const accountData = accountSnapshot.val();
+        if (accountData.password !== password) {
+            RainbetUtils.showMessage('Incorrect password - account deletion cancelled', true, 'settingsMessage');
+            return;
+        }
+        
+        // Log the account deletion for security
+        logSecurityEvent('ACCOUNT_DELETED', currentUser, `Account self-deleted by user`);
+        
+        // Delete all user data
+        const userRef = window.firebaseRef(window.firebaseDb, `users/${currentUser}`);
+        await window.firebaseSet(userRef, null);
+        
+        // Delete account
+        await window.firebaseSet(accountRef, null);
+        
+        // Add system message about account deletion
+        await RainbetUtils.addSystemMessage(`User ${currentUser} has deleted their account.`);
+        
+        // Log out immediately
+        RainbetUtils.showMessage('Account successfully deleted. You will be logged out.', false, 'settingsMessage');
+        
+        setTimeout(() => {
+            RainbetUtils.logout();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        RainbetUtils.showMessage('Error deleting account. Please try again later.', true, 'settingsMessage');
+    }
+}
+
 // Admin functions
 function requestAdminStatus() {
     pendingAdminAction = 'requestAdmin';
