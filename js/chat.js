@@ -338,24 +338,41 @@ function setupMessageListener() {
 
 // Online users listener
 function setupOnlineUsersListener() {
-    if (onlineUsersListener) {
-        window.firebaseOff(window.firebaseRef(window.firebaseDb, 'online'), 'value', onlineUsersListener);
+    try {
+        if (onlineUsersListener) {
+            window.firebaseOff(window.firebaseRef(window.firebaseDb, 'online'), 'value', onlineUsersListener);
+        }
+        
+        if (!window.firebaseDb) {
+            console.log('Firebase not available for online users listener');
+            return;
+        }
+        
+        const onlineRef = window.firebaseRef(window.firebaseDb, 'online');
+        onlineUsersListener = window.firebaseOnValue(onlineRef, (snapshot) => {
+            updateOnlineCount(snapshot);
+        });
+    } catch (error) {
+        console.error('Error setting up online users listener:', error);
+        // Don't let this break login
     }
-    
-    const onlineRef = window.firebaseRef(window.firebaseDb, 'online');
-    onlineUsersListener = window.firebaseOnValue(onlineRef, (snapshot) => {
-        updateOnlineCount(snapshot);
-    });
 }
 
 function updateOnlineCount(snapshot) {
-    const onlineCountDiv = document.getElementById('onlineCount');
-    if (snapshot.exists()) {
-        const onlineUsers = snapshot.val();
-        const count = Object.keys(onlineUsers).length;
-        onlineCountDiv.textContent = `${count} user${count !== 1 ? 's' : ''} online`;
-    } else {
-        onlineCountDiv.textContent = '0 users online';
+    try {
+        const onlineCountDiv = document.getElementById('onlineCount');
+        if (!onlineCountDiv) return;
+        
+        if (snapshot && snapshot.exists()) {
+            const onlineUsers = snapshot.val();
+            const count = Object.keys(onlineUsers).length;
+            onlineCountDiv.textContent = `${count} user${count !== 1 ? 's' : ''} online`;
+        } else {
+            onlineCountDiv.textContent = '0 users online';
+        }
+    } catch (error) {
+        console.error('Error updating online count:', error);
+        // Don't let this break the page
     }
 }
 
