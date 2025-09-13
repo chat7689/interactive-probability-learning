@@ -361,24 +361,47 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 </div>
                 
                 <div style="margin-bottom: 15px;">
-                    <h4>💸 Global Tax System</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <label>Tax Rate (%):</label>
-                            <input type="number" id="globalTaxRate" min="0" max="50" step="1" value="5" placeholder="5%">
-                        </div>
-                        <div>
-                            <label>Flat Tax Amount:</label>
-                            <input type="number" id="flatTaxAmount" min="0" max="100" step="1" value="0" placeholder="0 points">
-                        </div>
-                    </div>
+                    <h4>💸 Progressive Tax System</h4>
                     <div style="margin: 10px 0;">
-                        <label style="display: flex; align-items: center; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
                             <input type="checkbox" id="taxEnabled" checked>
-                            Enable Global Tax System
+                            Enable Progressive Tax System
                         </label>
                     </div>
-                    <button onclick="updateTaxSettings()" style="background: #8e44ad;">Update Tax Settings</button>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                        <h5 style="margin-top: 0; color: #34495e;">Tax Brackets:</h5>
+                        <div id="taxBrackets">
+                            <div class="tax-bracket" style="display: grid; grid-template-columns: 1fr 1fr 80px; gap: 10px; margin-bottom: 10px; align-items: center;">
+                                <input type="number" placeholder="Threshold (points)" value="0" min="0" class="bracket-threshold" disabled>
+                                <input type="number" placeholder="Rate %" value="0" min="0" max="50" step="1" class="bracket-rate">
+                                <span style="font-size: 12px; color: #666;">0-49</span>
+                            </div>
+                            <div class="tax-bracket" style="display: grid; grid-template-columns: 1fr 1fr 80px; gap: 10px; margin-bottom: 10px; align-items: center;">
+                                <input type="number" placeholder="Threshold (points)" value="50" min="0" class="bracket-threshold">
+                                <input type="number" placeholder="Rate %" value="5" min="0" max="50" step="1" class="bracket-rate">
+                                <span style="font-size: 12px; color: #666;">50-199</span>
+                            </div>
+                            <div class="tax-bracket" style="display: grid; grid-template-columns: 1fr 1fr 80px; gap: 10px; margin-bottom: 10px; align-items: center;">
+                                <input type="number" placeholder="Threshold (points)" value="200" min="0" class="bracket-threshold">
+                                <input type="number" placeholder="Rate %" value="10" min="0" max="50" step="1" class="bracket-rate">
+                                <span style="font-size: 12px; color: #666;">200-499</span>
+                            </div>
+                            <div class="tax-bracket" style="display: grid; grid-template-columns: 1fr 1fr 80px; gap: 10px; margin-bottom: 10px; align-items: center;">
+                                <input type="number" placeholder="Threshold (points)" value="500" min="0" class="bracket-threshold">
+                                <input type="number" placeholder="Rate %" value="15" min="0" max="50" step="1" class="bracket-rate">
+                                <span style="font-size: 12px; color: #666;">500-999</span>
+                            </div>
+                            <div class="tax-bracket" style="display: grid; grid-template-columns: 1fr 1fr 80px; gap: 10px; margin-bottom: 10px; align-items: center;">
+                                <input type="number" placeholder="Threshold (points)" value="1000" min="0" class="bracket-threshold">
+                                <input type="number" placeholder="Rate %" value="20" min="0" max="50" step="1" class="bracket-rate">
+                                <span style="font-size: 12px; color: #666;">1000+</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="updateProgressiveTaxSettings()" style="background: #8e44ad;">Update Progressive Tax</button>
+                    <button onclick="previewTaxCalculation()" style="background: #3498db; margin-left: 10px;">Preview Tax</button>
                 </div>
                 
                 <div style="margin-bottom: 15px;">

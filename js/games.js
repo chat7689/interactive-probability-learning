@@ -89,47 +89,101 @@ const GAMES_CONFIG = {
     crash: { averageMultiplier: 2.0 } // Dynamic system
 };
 
-// Global tax system - can be configured by admin
-let GLOBAL_TAX_RATE = 0.05; // 5% default tax on winnings
-let FLAT_TAX_AMOUNT = 0; // Flat tax amount per win (0 = disabled)
+// Progressive tax system - can be configured by admin
 let TAX_ENABLED = true; // Global tax toggle
+let PROGRESSIVE_TAX_BRACKETS = [
+    { threshold: 0, rate: 0.00 },      // 0% tax on first 0-50 points
+    { threshold: 50, rate: 0.05 },     // 5% tax on 51-200 points
+    { threshold: 200, rate: 0.10 },    // 10% tax on 201-500 points
+    { threshold: 500, rate: 0.15 },    // 15% tax on 501-1000 points
+    { threshold: 1000, rate: 0.20 }    // 20% tax on 1000+ points
+];
 
-// Function to apply tax to winnings
+// Function to apply progressive tax to winnings
 function applyTax(winnings) {
-    if (!TAX_ENABLED) return winnings;
+    if (!TAX_ENABLED || winnings <= 0) return winnings;
     
-    let taxedWinnings = winnings;
+    let remainingWinnings = winnings;
+    let totalTax = 0;
     
-    // Apply percentage tax
-    if (GLOBAL_TAX_RATE > 0) {
-        taxedWinnings = winnings * (1 - GLOBAL_TAX_RATE);
+    // Apply progressive tax brackets
+    for (let i = 0; i < PROGRESSIVE_TAX_BRACKETS.length; i++) {
+        const currentBracket = PROGRESSIVE_TAX_BRACKETS[i];
+        const nextBracket = PROGRESSIVE_TAX_BRACKETS[i + 1];
+        
+        // Calculate the amount in this bracket
+        let taxableInBracket;
+        if (nextBracket) {
+            // Not the highest bracket
+            const bracketMax = nextBracket.threshold;
+            taxableInBracket = Math.min(remainingWinnings, Math.max(0, bracketMax - currentBracket.threshold));
+        } else {
+            // Highest bracket - all remaining winnings
+            taxableInBracket = Math.max(0, remainingWinnings - currentBracket.threshold);
+        }
+        
+        // Apply tax for this bracket
+        if (taxableInBracket > 0 && winnings > currentBracket.threshold) {
+            totalTax += taxableInBracket * currentBracket.rate;
+        }
     }
     
-    // Apply flat tax
-    if (FLAT_TAX_AMOUNT > 0) {
-        taxedWinnings = Math.max(0, taxedWinnings - FLAT_TAX_AMOUNT);
+    return Math.floor(winnings - totalTax);
+}
+
+// Function to get tax breakdown for display
+function getTaxBreakdown(winnings) {
+    if (!TAX_ENABLED || winnings <= 0) return { taxAmount: 0, breakdown: [] };
+    
+    let remainingWinnings = winnings;
+    let totalTax = 0;
+    let breakdown = [];
+    
+    for (let i = 0; i < PROGRESSIVE_TAX_BRACKETS.length; i++) {
+        const currentBracket = PROGRESSIVE_TAX_BRACKETS[i];
+        const nextBracket = PROGRESSIVE_TAX_BRACKETS[i + 1];
+        
+        let taxableInBracket;
+        if (nextBracket) {
+            const bracketMax = nextBracket.threshold;
+            taxableInBracket = Math.min(remainingWinnings, Math.max(0, bracketMax - currentBracket.threshold));
+        } else {
+            taxableInBracket = Math.max(0, remainingWinnings - currentBracket.threshold);
+        }
+        
+        if (taxableInBracket > 0 && winnings > currentBracket.threshold) {
+            const taxInBracket = taxableInBracket * currentBracket.rate;
+            totalTax += taxInBracket;
+            
+            if (taxInBracket > 0.01) { // Only show brackets with meaningful tax
+                breakdown.push({
+                    range: nextBracket ? `${currentBracket.threshold}-${nextBracket.threshold - 1}` : `${currentBracket.threshold}+`,
+                    rate: currentBracket.rate * 100,
+                    amount: Math.floor(taxableInBracket),
+                    tax: Math.floor(taxInBracket)
+                });
+            }
+        }
     }
     
-    return Math.floor(taxedWinnings);
+    return { taxAmount: Math.floor(totalTax), breakdown };
 }
 
 // Function to update tax settings from admin panel
-window.setGlobalTaxSettings = function(rate, flatAmount, enabled) {
-    GLOBAL_TAX_RATE = rate;
-    FLAT_TAX_AMOUNT = flatAmount;
+window.setGlobalTaxSettings = function(brackets, enabled) {
+    PROGRESSIVE_TAX_BRACKETS = brackets || PROGRESSIVE_TAX_BRACKETS;
     TAX_ENABLED = enabled;
 };
 
 // Load tax settings from Firebase
 async function loadTaxSettings() {
     try {
-        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/tax');
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTax');
         const snapshot = await window.firebaseGet(taxRef);
         
         if (snapshot.exists()) {
             const settings = snapshot.val();
-            GLOBAL_TAX_RATE = settings.rate || 0.05;
-            FLAT_TAX_AMOUNT = settings.flatAmount || 0;
+            PROGRESSIVE_TAX_BRACKETS = settings.brackets || PROGRESSIVE_TAX_BRACKETS;
             TAX_ENABLED = settings.enabled !== undefined ? settings.enabled : true;
         }
     } catch (error) {
@@ -977,7 +1031,9 @@ function showGameResult(won, betAmount, multiplier, message) {
         RainbetUtils.awardPoints(taxedWinnings);
         
         if (taxAmount > 0) {
-            pointsText = `You won ${rawWinnings} points! (${taxedWinnings} after ${taxAmount} tax)`;
+            const taxBreakdown = getTaxBreakdown(rawWinnings);
+            const effectiveRate = ((taxAmount / rawWinnings) * 100).toFixed(1);
+            pointsText = `You won ${rawWinnings} points! (${taxedWinnings} after ${taxAmount} progressive tax @ ${effectiveRate}%)`;
         } else {
             pointsText = 'You won ' + taxedWinnings + ' points!';
         }

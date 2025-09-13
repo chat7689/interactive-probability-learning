@@ -1517,50 +1517,157 @@ async function redistributeWealth() {
     }
 }
 
-async function updateTaxSettings() {
+async function updateProgressiveTaxSettings() {
     try {
-        const taxRate = parseFloat(document.getElementById('globalTaxRate').value) / 100;
-        const flatTax = parseInt(document.getElementById('flatTaxAmount').value) || 0;
         const taxEnabled = document.getElementById('taxEnabled').checked;
+        const brackets = [];
+        
+        // Get all tax brackets
+        const bracketElements = document.querySelectorAll('.tax-bracket');
+        bracketElements.forEach(bracket => {
+            const threshold = parseInt(bracket.querySelector('.bracket-threshold').value) || 0;
+            const rate = parseFloat(bracket.querySelector('.bracket-rate').value) / 100 || 0;
+            brackets.push({ threshold, rate });
+        });
+        
+        // Sort brackets by threshold
+        brackets.sort((a, b) => a.threshold - b.threshold);
         
         // Update global variables in games.js
         if (window.setGlobalTaxSettings) {
-            window.setGlobalTaxSettings(taxRate, flatTax, taxEnabled);
+            window.setGlobalTaxSettings(brackets, taxEnabled);
         }
         
         // Save to Firebase for persistence
-        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/tax');
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTax');
         await window.firebaseSet(taxRef, {
-            rate: taxRate,
-            flatAmount: flatTax,
+            brackets: brackets,
             enabled: taxEnabled
         });
         
         // Update display
+        const topRate = brackets[brackets.length - 1]?.rate * 100 || 0;
         document.getElementById('currentTaxRate').textContent = 
-            taxEnabled ? `${Math.round(taxRate * 100)}%` : 'Disabled';
+            taxEnabled ? `Progressive (up to ${topRate}%)` : 'Disabled';
         
-        await RainbetUtils.addSystemMessage(`Admin updated tax settings: ${Math.round(taxRate * 100)}% rate, ${flatTax} flat tax, ${taxEnabled ? 'enabled' : 'disabled'}`);
-        logSecurityEvent('TAX_SETTINGS_UPDATED', RainbetUtils.getCurrentUser(), `Rate: ${Math.round(taxRate * 100)}%, Flat: ${flatTax}, Enabled: ${taxEnabled}`);
-        alert('Tax settings updated successfully!');
+        await RainbetUtils.addSystemMessage(`Admin updated progressive tax: ${brackets.length} brackets, ${taxEnabled ? 'enabled' : 'disabled'}`);
+        logSecurityEvent('PROGRESSIVE_TAX_UPDATED', RainbetUtils.getCurrentUser(), `Brackets: ${brackets.length}, Max rate: ${topRate}%`);
+        alert('Progressive tax settings updated successfully!');
     } catch (error) {
-        console.error('Error updating tax settings:', error);
-        alert('Error updating tax settings');
+        console.error('Error updating progressive tax settings:', error);
+        alert('Error updating progressive tax settings');
     }
+}
+
+async function previewTaxCalculation() {
+    const testAmount = prompt('Enter winnings amount to preview tax calculation:', '500');
+    if (!testAmount) return;
+    
+    const amount = parseInt(testAmount);
+    if (isNaN(amount) || amount <= 0) {
+        alert('Please enter a valid positive number');
+        return;
+    }
+    
+    // Get current brackets
+    const brackets = [];
+    const bracketElements = document.querySelectorAll('.tax-bracket');
+    bracketElements.forEach(bracket => {
+        const threshold = parseInt(bracket.querySelector('.bracket-threshold').value) || 0;
+        const rate = parseFloat(bracket.querySelector('.bracket-rate').value) / 100 || 0;
+        brackets.push({ threshold, rate });
+    });
+    
+    // Calculate tax manually (same logic as in games.js)
+    let totalTax = 0;
+    let breakdown = [];
+    
+    for (let i = 0; i < brackets.length; i++) {
+        const currentBracket = brackets[i];
+        const nextBracket = brackets[i + 1];
+        
+        let taxableInBracket;
+        if (nextBracket) {
+            const bracketMax = nextBracket.threshold;
+            taxableInBracket = Math.min(amount, Math.max(0, bracketMax - currentBracket.threshold));
+        } else {
+            taxableInBracket = Math.max(0, amount - currentBracket.threshold);
+        }
+        
+        if (taxableInBracket > 0 && amount > currentBracket.threshold) {
+            const taxInBracket = taxableInBracket * currentBracket.rate;
+            totalTax += taxInBracket;
+            
+            if (taxInBracket > 0.01) {
+                breakdown.push({
+                    range: nextBracket ? `${currentBracket.threshold}-${nextBracket.threshold - 1}` : `${currentBracket.threshold}+`,
+                    rate: currentBracket.rate * 100,
+                    amount: Math.floor(taxableInBracket),
+                    tax: Math.floor(taxInBracket)
+                });
+            }
+        }
+    }
+    
+    const afterTax = amount - Math.floor(totalTax);
+    const effectiveRate = ((totalTax / amount) * 100).toFixed(1);
+    
+    let previewText = `Tax Preview for ${amount} points:\n\n`;
+    breakdown.forEach(b => {
+        previewText += `${b.range} points @ ${b.rate}%: ${b.amount} → ${b.tax} tax\n`;
+    });
+    previewText += `\nTotal Tax: ${Math.floor(totalTax)} points (${effectiveRate}%)\n`;
+    previewText += `After Tax: ${afterTax} points`;
+    
+    alert(previewText);
 }
 
 async function loadCurrentTaxSettings() {
     try {
-        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/tax');
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTax');
         const snapshot = await window.firebaseGet(taxRef);
         
         if (snapshot.exists()) {
             const settings = snapshot.val();
-            document.getElementById('globalTaxRate').value = Math.round((settings.rate || 0.05) * 100);
-            document.getElementById('flatTaxAmount').value = settings.flatAmount || 0;
+            
+            // Load progressive tax brackets using class selectors
+            const thresholdInputs = document.querySelectorAll('.bracket-threshold');
+            const rateInputs = document.querySelectorAll('.bracket-rate');
+            
+            if (settings.brackets && Array.isArray(settings.brackets)) {
+                settings.brackets.forEach((bracket, index) => {
+                    if (thresholdInputs[index] && rateInputs[index]) {
+                        thresholdInputs[index].value = bracket.threshold || 0;
+                        rateInputs[index].value = Math.round((bracket.rate || 0) * 100);
+                    }
+                });
+            }
+            
+            // Load tax enabled setting
             document.getElementById('taxEnabled').checked = settings.enabled !== undefined ? settings.enabled : true;
-            document.getElementById('currentTaxRate').textContent = 
-                settings.enabled ? `${Math.round((settings.rate || 0.05) * 100)}%` : 'Disabled';
+            
+            // Update current tax status display
+            const statusText = settings.enabled ? 'Progressive Tax Enabled' : 'Tax Disabled';
+            document.getElementById('currentTaxRate').textContent = statusText;
+        } else {
+            // Set default progressive tax brackets if none exist
+            const thresholdInputs = document.querySelectorAll('.bracket-threshold');
+            const rateInputs = document.querySelectorAll('.bracket-rate');
+            
+            const defaultBrackets = [
+                { threshold: 0, rate: 0.00 },
+                { threshold: 50, rate: 0.05 },
+                { threshold: 200, rate: 0.10 },
+                { threshold: 500, rate: 0.15 },
+                { threshold: 1000, rate: 0.20 }
+            ];
+            
+            defaultBrackets.forEach((bracket, index) => {
+                if (thresholdInputs[index] && rateInputs[index]) {
+                    thresholdInputs[index].value = bracket.threshold;
+                    rateInputs[index].value = Math.round(bracket.rate * 100);
+                }
+            });
         }
     } catch (error) {
         console.error('Error loading current tax settings:', error);
