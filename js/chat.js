@@ -310,30 +310,34 @@ async function enterChat() {
 // Real-time message listener with simple throttling
 let displayMessagesTimeout = null;
 function setupMessageListener() {
+    console.log('Setting up message listener...');
+    
     if (messageListener) {
         window.firebaseOff(window.firebaseRef(window.firebaseDb, 'messages'), 'value', messageListener);
     }
     
     const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
     messageListener = window.firebaseOnValue(messagesRef, (snapshot) => {
+        console.log('Firebase message listener triggered');
+        
         // Only run if we're authenticated and in chat mode
         if (!RainbetUtils.getCurrentUser()) {
+            console.log('No current user, skipping message update');
             return;
         }
         
-        // Skip if currently sending a message to prevent immediate duplicates
-        if (messageSending) {
-            return;
-        }
-        
+        // Don't skip during message sending - we want real-time updates
         // Simple throttling to batch rapid updates
         if (displayMessagesTimeout) {
             clearTimeout(displayMessagesTimeout);
         }
         displayMessagesTimeout = setTimeout(() => {
+            console.log('Displaying messages from listener...');
             displayMessages();
-        }, 150); // Short delay to batch updates
+        }, 50); // Very short delay
     });
+    
+    console.log('Message listener set up successfully');
 }
 
 // Online users listener
@@ -723,6 +727,9 @@ async function sendMessage() {
             timestamp: window.firebaseServerTimestamp()
         });
         console.log('Message sent successfully to Firebase');
+        
+        // Immediately refresh messages to show the new message
+        await displayMessages();
         
         // Clear sending flag after successful send
         setTimeout(() => {
