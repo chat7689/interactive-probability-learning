@@ -841,6 +841,52 @@ button:disabled {
     letter-spacing: 1px;
 }
 
+/* Play Again and Back to Games buttons */
+.play-again-btn, .back-to-games-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 5px;
+    transition: all 0.2s ease;
+}
+
+.back-to-games-btn {
+    background: #3498db;
+}
+
+.play-again-btn:hover {
+    background: #229954;
+    transform: translateY(-1px);
+}
+
+.back-to-games-btn:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+/* Game points display in game interface */
+.game-points-display {
+    background: #3498db;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    border: 2px solid #2980b9;
+}
+
+.game-points-display span {
+    font-weight: bold;
+    font-size: 18px;
+}
+
 .game-bet {
     background: linear-gradient(45deg, #3498db, #2980b9);
     color: white;

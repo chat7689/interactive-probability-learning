@@ -270,7 +270,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Game selection
-function showGame(gameType) {
+async function showGame(gameType) {
     // Check if game is enabled
     if (!isGameEnabled(gameType)) {
         alert(`🚫 ${gameType} is currently disabled by administration.`);
@@ -284,6 +284,9 @@ function showGame(gameType) {
     
     // SECURITY: Enable bet input when starting new game
     document.getElementById('betAmount').disabled = false;
+    
+    // Update points display in game interface
+    await updateUserPoints();
     
     const gameContent = document.getElementById('gameContent');
     
@@ -1091,7 +1094,7 @@ function deductPoints(amount) {
     return true;
 }
 
-function showGameResult(won, betAmount, multiplier, message) {
+async function showGameResult(won, betAmount, multiplier, message) {
     // SECURITY: Always unlock bet amount when game ends
     unlockBetAmount();
     gameInProgress = false;
@@ -1116,7 +1119,7 @@ function showGameResult(won, betAmount, multiplier, message) {
             pointsText = 'You won ' + taxedWinnings + ' points!';
         }
         
-        updateUserPoints();
+        await updateUserPoints();
         updateLeaderboard();
         RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${taxedWinnings} points playing ${currentGame}!`);
     } else {
@@ -1129,6 +1132,10 @@ function showGameResult(won, betAmount, multiplier, message) {
             <h4>${resultText}</h4>
             <p>${message}</p>
             <p>${pointsText}</p>
+            <div style="margin-top: 15px;">
+                <button onclick="showGame('${currentGame}')" class="play-again-btn">🎮 Play Again</button>
+                <button onclick="goBack()" class="back-to-games-btn">🏠 Back to Games</button>
+            </div>
         </div>
     `;
 }
@@ -1138,16 +1145,26 @@ function addGameMessage(text) {
     resultDiv.innerHTML = '<p style="text-align: center; color: #3498db; font-weight: 600;">' + text + '</p>';
 }
 
-function updateUserPoints() {
-    const points = RainbetUtils.getUserPoints();
-    document.getElementById('userPoints').textContent = points;
+async function updateUserPoints() {
+    const points = await RainbetUtils.getUserPoints();
+    const userPointsElement = document.getElementById('userPoints');
+    if (userPointsElement) {
+        userPointsElement.textContent = points;
+    }
+    // Also update the game points display if it exists
+    const gameUserPointsElement = document.getElementById('gameUserPoints');
+    if (gameUserPointsElement) {
+        gameUserPointsElement.textContent = points;
+    }
 }
 
 function updateLeaderboard() {
     const leaderboardList = document.getElementById('leaderboardList');
+    if (!leaderboardList) return;
+    
     leaderboardList.innerHTML = '';
     
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userArray = [];
     
     for (const username in userdata) {
@@ -2030,7 +2047,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         attempts++;
     }
     
-    updateUserPoints();
+    await updateUserPoints();
     updateLeaderboard();
     loadTaxSettings();
     
@@ -2047,8 +2064,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Update leaderboard every 30 seconds
-    setInterval(() => {
+    setInterval(async () => {
         updateLeaderboard();
-        updateUserPoints();
+        await updateUserPoints();
     }, 30000);
 });
