@@ -64,6 +64,8 @@
 let pendingAdminAction = null;
 let messageListener = null;
 let onlineUsersListener = null;
+let lastSentMessage = null;
+let lastSentTimestamp = 0;
 
 // Security logging function
 async function logSecurityEvent(eventType, user, action) {
@@ -598,6 +600,10 @@ async function sendMessage() {
         return;
     }
     
+    // Track the message being sent to prevent duplicates
+    lastSentMessage = message;
+    lastSentTimestamp = Date.now();
+    
     // Send message to Firebase
     try {
         const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
@@ -608,6 +614,15 @@ async function sendMessage() {
         });
         
         messageInput.value = '';
+        
+        // Clear tracking after 3 seconds
+        setTimeout(() => {
+            if (lastSentMessage === message) {
+                lastSentMessage = null;
+                lastSentTimestamp = 0;
+            }
+        }, 3000);
+        
     } catch (error) {
         console.error('Error sending message:', error);
         // Fallback to localStorage
@@ -647,7 +662,26 @@ async function displayMessages() {
             });
             
             // Keep only last 50 messages for display
-            const recentMessages = messages.slice(-50);
+            let recentMessages = messages.slice(-50);
+            
+            // Filter out potential duplicates for the current user
+            if (lastSentMessage && lastSentTimestamp) {
+                const timeDiff = Date.now() - lastSentTimestamp;
+                if (timeDiff < 2000) { // Within 2 seconds of sending
+                    // Count how many identical messages from current user in recent messages
+                    let duplicateCount = 0;
+                    for (let i = recentMessages.length - 1; i >= 0; i--) {
+                        const msg = recentMessages[i];
+                        if (msg.username === currentUser && msg.message === lastSentMessage) {
+                            duplicateCount++;
+                            if (duplicateCount > 1) {
+                                // Remove the duplicate (keep the first occurrence)
+                                recentMessages.splice(i, 1);
+                            }
+                        }
+                    }
+                }
+            }
             
             for (const msg of recentMessages) {
                 // Skip messages targeted to other users
@@ -976,8 +1010,8 @@ function openAdmin() {
         e.preventDefault();
         e.stopPropagation();
         
-        // Only scroll the modal content - 2x sensitivity
-        const delta = e.deltaY * 2;
+        // Only scroll the modal content - 4x sensitivity (2x more than before)
+        const delta = e.deltaY * 4;
         modalContent.scrollTop += delta;
     };
     
