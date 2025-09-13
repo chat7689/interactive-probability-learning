@@ -278,6 +278,9 @@ function showGame(gameType) {
         case 'crash':
             setupCrash(gameContent);
             break;
+        case 'flappybird':
+            setupFlappyBird(gameContent);
+            break;
     }
 }
 
@@ -1720,6 +1723,216 @@ function resetCrash() {
         document.getElementById('crashMultiplier').textContent = '1.00x';
         document.getElementById('crashStatus').textContent = 'Click Start to begin';
     }, 3000);
+}
+
+// TOBIN MALONE - Flappy Bird Game Implementation
+// © 2025 TOBIN MALONE - PROPRIETARY CODE - DO NOT COPY
+let flappyCanvas = null;
+let flappyCtx = null;
+let flappyBird = null;
+let flappyPipes = [];
+let flappyScore = 0;
+let flappyGameRunning = false;
+let flappyAnimationId = null;
+
+function setupFlappyBird(container) {
+    container.innerHTML = `
+        <div style="text-align: center;">
+            <h3>🐦 Flappy Bird</h3>
+            <p>Navigate through the pipes! Earn 1 credit per point scored.</p>
+            <div style="margin: 20px 0;">
+                <canvas id="flappyCanvas" width="400" height="400" style="border: 2px solid #ccc; background: #87CEEB;"></canvas>
+            </div>
+            <div style="margin: 10px 0;">
+                <div>Score: <span id="flappyScore">0</span></div>
+                <div>Credits to Earn: <span id="flappyCredits">0</span></div>
+            </div>
+            <div style="margin: 20px 0;">
+                <button class="game-btn" onclick="startFlappyBird()" id="flappyStartBtn">🐦 Start Game</button>
+                <button class="game-btn" onclick="stopFlappyBird()" id="flappyStopBtn" disabled style="background: #e74c3c;">Stop Game</button>
+            </div>
+            <div style="margin: 10px 0; font-size: 14px; color: #666;">
+                Click or press SPACE to flap! Avoid the pipes!
+            </div>
+            <div id="flappyResult"></div>
+        </div>
+    `;
+    
+    // Initialize canvas
+    flappyCanvas = document.getElementById('flappyCanvas');
+    flappyCtx = flappyCanvas.getContext('2d');
+    
+    // Initialize bird
+    flappyBird = {
+        x: 50,
+        y: 200,
+        width: 20,
+        height: 20,
+        velocity: 0,
+        gravity: 0.6,
+        jump: -10
+    };
+    
+    // Initialize pipes
+    flappyPipes = [];
+    flappyScore = 0;
+    
+    drawFlappyBird();
+}
+
+function startFlappyBird() {
+    if (flappyGameRunning) return;
+    
+    flappyGameRunning = true;
+    document.getElementById('flappyStartBtn').disabled = true;
+    document.getElementById('flappyStopBtn').disabled = false;
+    document.getElementById('flappyResult').innerHTML = '';
+    
+    // Reset game state
+    flappyBird.y = 200;
+    flappyBird.velocity = 0;
+    flappyPipes = [];
+    flappyScore = 0;
+    updateFlappyScore();
+    
+    // Add click/keypress event listeners
+    flappyCanvas.addEventListener('click', flappyJump);
+    document.addEventListener('keydown', flappyKeyHandler);
+    
+    // Start game loop
+    flappyAnimationId = requestAnimationFrame(flappyGameLoop);
+}
+
+function stopFlappyBird() {
+    if (!flappyGameRunning) return;
+    
+    flappyGameRunning = false;
+    document.getElementById('flappyStartBtn').disabled = false;
+    document.getElementById('flappyStopBtn').disabled = true;
+    
+    // Remove event listeners
+    flappyCanvas.removeEventListener('click', flappyJump);
+    document.removeEventListener('keydown', flappyKeyHandler);
+    
+    // Stop animation
+    if (flappyAnimationId) {
+        cancelAnimationFrame(flappyAnimationId);
+        flappyAnimationId = null;
+    }
+    
+    // Award credits based on score (1 credit per point)
+    if (flappyScore > 0) {
+        RainbetUtils.awardPoints(flappyScore);
+        document.getElementById('flappyResult').innerHTML = `
+            <div style="color: #27ae60; font-weight: bold; margin: 10px 0;">
+                🎉 Game Over! You earned ${flappyScore} credits!<br>
+                Final Score: ${flappyScore} points
+            </div>
+        `;
+    } else {
+        document.getElementById('flappyResult').innerHTML = `
+            <div style="color: #e74c3c; margin: 10px 0;">
+                💥 Game Over! No points earned.
+            </div>
+        `;
+    }
+}
+
+function flappyJump() {
+    if (!flappyGameRunning) return;
+    flappyBird.velocity = flappyBird.jump;
+}
+
+function flappyKeyHandler(e) {
+    if (e.code === 'Space' && flappyGameRunning) {
+        e.preventDefault();
+        flappyJump();
+    }
+}
+
+function flappyGameLoop() {
+    if (!flappyGameRunning) return;
+    
+    // Update bird
+    flappyBird.velocity += flappyBird.gravity;
+    flappyBird.y += flappyBird.velocity;
+    
+    // Check boundaries
+    if (flappyBird.y < 0 || flappyBird.y + flappyBird.height > flappyCanvas.height) {
+        stopFlappyBird();
+        return;
+    }
+    
+    // Add new pipes
+    if (flappyPipes.length === 0 || flappyPipes[flappyPipes.length - 1].x < flappyCanvas.width - 200) {
+        const gapY = 100 + Math.random() * 200;
+        const gapSize = 120;
+        flappyPipes.push({
+            x: flappyCanvas.width,
+            topHeight: gapY,
+            bottomY: gapY + gapSize,
+            bottomHeight: flappyCanvas.height - (gapY + gapSize),
+            passed: false
+        });
+    }
+    
+    // Update pipes
+    for (let i = flappyPipes.length - 1; i >= 0; i--) {
+        const pipe = flappyPipes[i];
+        pipe.x -= 3;
+        
+        // Check if bird passed pipe
+        if (!pipe.passed && pipe.x + 50 < flappyBird.x) {
+            pipe.passed = true;
+            flappyScore++;
+            updateFlappyScore();
+        }
+        
+        // Check collision
+        if (flappyBird.x + flappyBird.width > pipe.x && 
+            flappyBird.x < pipe.x + 50 &&
+            (flappyBird.y < pipe.topHeight || 
+             flappyBird.y + flappyBird.height > pipe.bottomY)) {
+            stopFlappyBird();
+            return;
+        }
+        
+        // Remove off-screen pipes
+        if (pipe.x + 50 < 0) {
+            flappyPipes.splice(i, 1);
+        }
+    }
+    
+    drawFlappyBird();
+    flappyAnimationId = requestAnimationFrame(flappyGameLoop);
+}
+
+function drawFlappyBird() {
+    // Clear canvas
+    flappyCtx.fillStyle = '#87CEEB';
+    flappyCtx.fillRect(0, 0, flappyCanvas.width, flappyCanvas.height);
+    
+    // Draw pipes
+    flappyCtx.fillStyle = '#228B22';
+    for (const pipe of flappyPipes) {
+        // Top pipe
+        flappyCtx.fillRect(pipe.x, 0, 50, pipe.topHeight);
+        // Bottom pipe
+        flappyCtx.fillRect(pipe.x, pipe.bottomY, 50, pipe.bottomHeight);
+    }
+    
+    // Draw bird
+    flappyCtx.fillStyle = '#FFD700';
+    flappyCtx.fillRect(flappyBird.x, flappyBird.y, flappyBird.width, flappyBird.height);
+    
+    // Draw bird eye
+    flappyCtx.fillStyle = '#000';
+    flappyCtx.fillRect(flappyBird.x + 12, flappyBird.y + 5, 3, 3);
+}
+
+function updateFlappyScore() {
+    document.getElementById('flappyScore').textContent = flappyScore;
+    document.getElementById('flappyCredits').textContent = flappyScore;
 }
 
 // Initialize games page

@@ -397,6 +397,7 @@ async function sendMessage() {
 • 🎡 Roulette - Classic casino wheel
 • 🂠 Baccarat - Player vs Banker
 • 📈 Crash - Cash out before it crashes
+• 🐦 Flappy Bird - Navigate through pipes (1 credit per point)
 
 💰 Shop Features:
 • Text Effects: Large text, bold text, highlights
