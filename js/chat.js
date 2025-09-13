@@ -1199,7 +1199,7 @@ function openAdmin() {
     
     loadUserPointsList();
     loadOnlineUsersList();
-    loadGameToggles();
+    loadCurrentGameToggles();
     loadGameMultipliers();
     initializeAdminCollapsible();
     refreshEconomicStats();
@@ -1630,6 +1630,26 @@ async function loadGameMultipliers() {
         });
     } catch (error) {
         console.error('Error loading game multipliers:', error);
+    }
+}
+
+// Load current game toggle states into admin panel
+async function loadCurrentGameToggles() {
+    try {
+        const settingsRef = window.firebaseRef(window.firebaseDb, 'gameSettings/toggles');
+        const snapshot = await window.firebaseGet(settingsRef);
+        
+        const toggles = snapshot.exists() ? snapshot.val() : {};
+        
+        // Update checkboxes with current states
+        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'].forEach(game => {
+            const checkbox = document.getElementById(`toggle_${game}`);
+            if (checkbox) {
+                checkbox.checked = toggles[game] !== false; // Default to true if not specified
+            }
+        });
+    } catch (error) {
+        console.error('Error loading game toggles:', error);
     }
 }
 

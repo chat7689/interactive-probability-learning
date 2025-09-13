@@ -117,6 +117,7 @@ const GAMES_CONFIG = {
 
 // Progressive tax system - can be configured by admin
 let TAX_ENABLED = true; // Global tax toggle
+let GAME_TOGGLES = {}; // Store which games are enabled/disabled
 let PROGRESSIVE_TAX_BRACKETS = [
     { threshold: 0, rate: 0.00 },      // 0% tax on first 0-50 points
     { threshold: 50, rate: 0.05 },     // 5% tax on 51-200 points
@@ -217,6 +218,37 @@ async function loadTaxSettings() {
     }
 }
 
+// Load game toggle settings
+async function loadGameToggles() {
+    try {
+        const settingsRef = window.firebaseRef(window.firebaseDb, 'gameSettings/toggles');
+        const snapshot = await window.firebaseGet(settingsRef);
+        if (snapshot.exists()) {
+            GAME_TOGGLES = snapshot.val();
+        } else {
+            // Default all games to enabled
+            GAME_TOGGLES = {
+                coinflip: true, cups: true, dice: true, slots: true, blackjack: true,
+                lottery: true, mines: true, memory: true, poker: true, reaction: true,
+                roulette: true, baccarat: true, crash: true, flappybird: true
+            };
+        }
+    } catch (error) {
+        console.error('Error loading game toggles:', error);
+        // Default all games to enabled if error
+        GAME_TOGGLES = {
+            coinflip: true, cups: true, dice: true, slots: true, blackjack: true,
+            lottery: true, mines: true, memory: true, poker: true, reaction: true,
+            roulette: true, baccarat: true, crash: true, flappybird: true
+        };
+    }
+}
+
+// Check if a game is enabled
+function isGameEnabled(gameName) {
+    return GAME_TOGGLES[gameName] !== false; // Default to true if not specified
+}
+
 // Navigation functions
 function backToGames() {
     document.getElementById('gameArea').style.display = 'none';
@@ -226,8 +258,25 @@ function backToGames() {
     document.getElementById('gameResult').innerHTML = '';
 }
 
+// Initialize games system
+async function initializeGames() {
+    await loadTaxSettings();
+    await loadGameToggles();
+}
+
+// Initialize when page loads
+if (typeof window !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', initializeGames);
+}
+
 // Game selection
 function showGame(gameType) {
+    // Check if game is enabled
+    if (!isGameEnabled(gameType)) {
+        alert(`🚫 ${gameType} is currently disabled by administration.`);
+        return;
+    }
+    
     currentGame = gameType;
     document.getElementById('gamesGrid').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
