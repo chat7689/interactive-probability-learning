@@ -378,11 +378,19 @@ function updateOnlineCount(snapshot) {
 
 // Message functions
 async function sendMessage() {
+    console.log('sendMessage function called');
     const messageInput = document.getElementById('messageInput');
+    if (!messageInput) {
+        console.error('Message input not found');
+        return;
+    }
+    
     const message = messageInput.value.trim();
+    console.log('Message to send:', message);
     if (!message) return;
     
     const currentUser = RainbetUtils.getCurrentUser();
+    console.log('Current user:', currentUser);
     if (await isUserTimedOut(currentUser)) {
         const userRef = window.firebaseRef(window.firebaseDb, `users/${currentUser}`);
         const snapshot = await window.firebaseGet(userRef);
@@ -700,13 +708,21 @@ async function sendMessage() {
     messageInput.value = '';
     
     // Send message to Firebase
+    console.log('Attempting to send to Firebase...');
     try {
+        if (!window.firebaseDb) {
+            console.error('Firebase database not available');
+            return;
+        }
+        
         const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
+        console.log('Sending message to Firebase...');
         await window.firebasePush(messagesRef, {
             username: RainbetUtils.getCurrentUser(),
             message: message,
             timestamp: window.firebaseServerTimestamp()
         });
+        console.log('Message sent successfully to Firebase');
         
         // Clear sending flag after successful send
         setTimeout(() => {
@@ -746,9 +762,10 @@ async function sendMessage() {
 }
 
 async function displayMessages() {
+    console.log('displayMessages called');
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) {
-        // Messages div doesn't exist, probably not in chat mode yet
+        console.error('Messages div not found');
         return;
     }
     
