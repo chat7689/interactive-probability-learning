@@ -1296,16 +1296,16 @@ async function updateChatName() {
 }
 
 async function givePointsToUser() {
-    const targetUsername = document.getElementById('targetUsername').value.trim();
-    const pointAmount = parseInt(document.getElementById('pointAmount').value);
+    const username = document.getElementById('giveUsername').value.trim();
+    const amount = parseInt(document.getElementById('giveAmount').value);
     
-    if (!targetUsername || !pointAmount) {
-        alert('Please enter username and amount');
+    if (!username || !amount || amount <= 0) {
+        alert('Please enter a valid username and positive amount');
         return;
     }
     
     try {
-        const userRef = window.firebaseRef(window.firebaseDb, `users/${targetUsername}`);
+        const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
         const snapshot = await window.firebaseGet(userRef);
         
         if (!snapshot.exists()) {
@@ -1313,14 +1313,107 @@ async function givePointsToUser() {
             return;
         }
         
-        await RainbetUtils.awardPoints(pointAmount, targetUsername);
-        await RainbetUtils.addSystemMessage(`Admin gave ${pointAmount} points to ${targetUsername}`);
+        await RainbetUtils.awardPoints(amount, username);
+        await RainbetUtils.addSystemMessage(`💰 Admin gave ${amount} points to ${username}`);
+        
+        // Clear inputs
+        document.getElementById('giveUsername').value = '';
+        document.getElementById('giveAmount').value = '';
+        
         await updateLeaderboard();
         await loadUserPointsList();
-        alert('Points awarded!');
+        
+        logSecurityEvent('POINTS_GIVEN', RainbetUtils.getCurrentUser(), `${amount} points to ${username}`);
+        alert(`✅ Successfully gave ${amount} points to ${username}!`);
     } catch (error) {
         console.error('Error giving points:', error);
-        alert('Error giving points');
+        alert('Error giving points to user');
+    }
+}
+
+async function setUserPoints() {
+    const username = document.getElementById('setUsername').value.trim();
+    const newTotal = parseInt(document.getElementById('setAmount').value);
+    
+    if (!username || newTotal < 0) {
+        alert('Please enter a valid username and amount (0 or higher)');
+        return;
+    }
+    
+    try {
+        // Check if user exists first
+        const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
+        const snapshot = await window.firebaseGet(userRef);
+        
+        if (!snapshot.exists()) {
+            alert('User not found');
+            return;
+        }
+        
+        const currentPoints = snapshot.val().points || 0;
+        
+        // Set the new total directly
+        await window.firebaseSet(userRef, { points: newTotal });
+        
+        await RainbetUtils.addSystemMessage(`🎯 Admin set ${username}'s points to ${newTotal} (was ${currentPoints})`);
+        
+        // Clear inputs
+        document.getElementById('setUsername').value = '';
+        document.getElementById('setAmount').value = '';
+        
+        await updateLeaderboard();
+        await loadUserPointsList();
+        
+        logSecurityEvent('POINTS_SET', RainbetUtils.getCurrentUser(), `${username}: ${currentPoints} → ${newTotal}`);
+        alert(`✅ Successfully set ${username}'s points to ${newTotal}!`);
+    } catch (error) {
+        console.error('Error setting points:', error);
+        alert('Error setting user points');
+    }
+}
+
+async function removePointsFromUser() {
+    const username = document.getElementById('removeUsername').value.trim();
+    const amount = parseInt(document.getElementById('removeAmount').value);
+    
+    if (!username || !amount || amount <= 0) {
+        alert('Please enter a valid username and positive amount');
+        return;
+    }
+    
+    try {
+        const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
+        const snapshot = await window.firebaseGet(userRef);
+        
+        if (!snapshot.exists()) {
+            alert('User not found');
+            return;
+        }
+        
+        const currentPoints = snapshot.val().points || 0;
+        
+        if (currentPoints < amount) {
+            alert(`❌ ${username} only has ${currentPoints} points. Cannot remove ${amount}.`);
+            return;
+        }
+        
+        const newTotal = currentPoints - amount;
+        await window.firebaseSet(userRef, { points: newTotal });
+        
+        await RainbetUtils.addSystemMessage(`➖ Admin removed ${amount} points from ${username} (${currentPoints} → ${newTotal})`);
+        
+        // Clear inputs
+        document.getElementById('removeUsername').value = '';
+        document.getElementById('removeAmount').value = '';
+        
+        await updateLeaderboard();
+        await loadUserPointsList();
+        
+        logSecurityEvent('POINTS_REMOVED', RainbetUtils.getCurrentUser(), `${amount} points from ${username}`);
+        alert(`✅ Successfully removed ${amount} points from ${username}!`);
+    } catch (error) {
+        console.error('Error removing points:', error);
+        alert('Error removing points from user');
     }
 }
 
@@ -1873,18 +1966,18 @@ async function redistributeWealth() {
 async function updateProgressiveTaxSettings() {
     try {
         const taxEnabled = document.getElementById('taxEnabled').checked;
-        const brackets = [];
         
-        // Get all tax brackets
-        const bracketElements = document.querySelectorAll('.tax-bracket');
-        bracketElements.forEach(bracket => {
-            const threshold = parseInt(bracket.querySelector('.bracket-threshold').value) || 0;
-            const rate = parseFloat(bracket.querySelector('.bracket-rate').value) / 100 || 0;
-            brackets.push({ threshold, rate });
-        });
+        // Get simple tax rates
+        const rate1 = parseFloat(document.getElementById('taxRate1').value) || 0;
+        const rate2 = parseFloat(document.getElementById('taxRate2').value) || 0;
+        const rate3 = parseFloat(document.getElementById('taxRate3').value) || 0;
         
-        // Sort brackets by threshold
-        brackets.sort((a, b) => a.threshold - b.threshold);
+        // Convert to simple brackets (much easier to understand)
+        const brackets = [
+            { threshold: 0, rate: rate1 / 100 },      // 1-100 points
+            { threshold: 101, rate: rate2 / 100 },    // 101-500 points  
+            { threshold: 501, rate: rate3 / 100 }     // 501+ points
+        ];
         
         // Update global variables in games.js
         if (window.setGlobalTaxSettings) {
@@ -1899,13 +1992,15 @@ async function updateProgressiveTaxSettings() {
         });
         
         // Update display
-        const topRate = brackets[brackets.length - 1]?.rate * 100 || 0;
-        document.getElementById('currentTaxRate').textContent = 
-            taxEnabled ? `Progressive (up to ${topRate}%)` : 'Disabled';
+        const maxRate = Math.max(rate1, rate2, rate3);
+        const currentTaxDisplay = document.getElementById('currentTaxRate');
+        if (currentTaxDisplay) {
+            currentTaxDisplay.textContent = taxEnabled ? `${rate1}%/${rate2}%/${rate3}%` : 'Disabled';
+        }
         
-        await RainbetUtils.addSystemMessage(`Admin updated progressive tax: ${brackets.length} brackets, ${taxEnabled ? 'enabled' : 'disabled'}`);
-        logSecurityEvent('PROGRESSIVE_TAX_UPDATED', RainbetUtils.getCurrentUser(), `Brackets: ${brackets.length}, Max rate: ${topRate}%`);
-        alert('Progressive tax settings updated successfully!');
+        await RainbetUtils.addSystemMessage(`💸 Tax updated: Small ${rate1}%, Medium ${rate2}%, Big ${rate3}% (${taxEnabled ? 'enabled' : 'disabled'})`);
+        logSecurityEvent('PROGRESSIVE_TAX_UPDATED', RainbetUtils.getCurrentUser(), `Rates: ${rate1}%/${rate2}%/${rate3}%`);
+        alert(`Tax settings updated!\n\n• Small wins (1-100): ${rate1}%\n• Medium wins (101-500): ${rate2}%\n• Big wins (501+): ${rate3}%\n\nSystem: ${taxEnabled ? 'Enabled' : 'Disabled'}`);
     } catch (error) {
         console.error('Error updating progressive tax settings:', error);
         alert('Error updating progressive tax settings');

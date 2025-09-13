@@ -94,14 +94,14 @@ const SHOP_ITEMS = [
 
 function getUserItemTier(itemId) {
     const currentUser = RainbetUtils.getCurrentUser();
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userData = userdata[currentUser] || { itemTiers: {} };
     return userData.itemTiers ? userData.itemTiers[itemId] || 0 : 0;
 }
 
 function setUserItemTier(itemId, tier) {
     const currentUser = RainbetUtils.getCurrentUser();
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userData = userdata[currentUser] || { points: 0, items: {}, itemTiers: {}, lastDaily: 0 };
     if (!userData.itemTiers) userData.itemTiers = {};
     userData.itemTiers[itemId] = tier;
@@ -109,7 +109,7 @@ function setUserItemTier(itemId, tier) {
     localStorage.setItem('chat_userdata', JSON.stringify(userdata));
 }
 
-function buyItemTier(itemId) {
+async function buyItemTier(itemId) {
     const currentUser = RainbetUtils.getCurrentUser();
     if (!currentUser) {
         alert('You must be logged in to buy items');
@@ -129,8 +129,9 @@ function buyItemTier(itemId) {
     
     const price = item.prices[nextTier - 1];
     
-    if (!RainbetUtils.deductPoints(price)) {
-        const userPoints = RainbetUtils.getUserPoints();
+    const success = await RainbetUtils.deductPoints(price);
+    if (!success) {
+        const userPoints = await RainbetUtils.getUserPoints();
         alert(`Insufficient points! You need ${price} but only have ${userPoints}`);
         return;
     }
@@ -138,22 +139,22 @@ function buyItemTier(itemId) {
     // Set new tier and activate item
     setUserItemTier(itemId, nextTier);
     const duration = item.durations[nextTier - 1];
-    RainbetUtils.purchaseItem(itemId + '_' + nextTier, 0); // Activate the item
+    await RainbetUtils.purchaseItem(itemId + '_' + nextTier, 0); // Activate the item
     
     // Add duration to existing active item if it exists
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
-    const userData = userdata[currentUser];
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
+    const userData = userdata[currentUser] || { points: 0, items: {}, itemTiers: {}, lastDaily: 0 };
     userData.items[itemId + '_' + nextTier] = Date.now();
     userdata[currentUser] = userData;
     localStorage.setItem('chat_userdata', JSON.stringify(userdata));
     
     alert(`${item.baseName} upgraded to Tier ${nextTier}!`);
-    updateUserPoints();
+    await updateUserPoints();
     updateLeaderboard();
     checkActiveItems();
 }
 
-function extendItem(itemId) {
+async function extendItem(itemId) {
     const currentUser = RainbetUtils.getCurrentUser();
     if (!currentUser) {
         alert('You must be logged in to extend items');
@@ -172,15 +173,16 @@ function extendItem(itemId) {
     // Extension costs 75% of the highest tier price
     const extensionPrice = Math.floor(item.prices[2] * 0.75);
     
-    if (!RainbetUtils.deductPoints(extensionPrice)) {
-        const userPoints = RainbetUtils.getUserPoints();
+    const success = await RainbetUtils.deductPoints(extensionPrice);
+    if (!success) {
+        const userPoints = await RainbetUtils.getUserPoints();
         alert(`Insufficient points! You need ${extensionPrice} but only have ${userPoints}`);
         return;
     }
     
     // Extend the current active item
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
-    const userData = userdata[currentUser];
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
+    const userData = userdata[currentUser] || { points: 0, items: {}, itemTiers: {}, lastDaily: 0 };
     const activeItemKey = itemId + '_' + currentTier;
     
     if (userData.items[activeItemKey]) {
@@ -203,19 +205,19 @@ function extendItem(itemId) {
     if (minutes > 0) timeText += minutes + 'm';
     
     alert(`${item.baseName} extended by ${timeText}!`);
-    updateUserPoints();
+    await updateUserPoints();
     updateLeaderboard();
     checkActiveItems();
 }
 
-function claimDailyCredits() {
+async function claimDailyCredits() {
     const currentUser = RainbetUtils.getCurrentUser();
     if (!currentUser) {
         alert('You must be logged in to claim daily points');
         return;
     }
     
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userData = userdata[currentUser] || { points: 0, items: {}, lastDaily: 0 };
     const lastDaily = userData.lastDaily || 0;
     const now = Date.now();
@@ -227,21 +229,21 @@ function claimDailyCredits() {
         return;
     }
     
-    userData.points = (userData.points || 0) + 50;
+    await RainbetUtils.awardPoints(50);
     userData.lastDaily = now;
     userdata[currentUser] = userData;
     localStorage.setItem('chat_userdata', JSON.stringify(userdata));
     
     alert('Daily points claimed! +50 points');
-    updateUserPoints();
+    await updateUserPoints();
     updateLeaderboard();
     checkDailyCreditsButton();
-    RainbetUtils.addSystemMessage(currentUser + ' claimed their daily points!');
+    await RainbetUtils.addSystemMessage(currentUser + ' claimed their daily points!');
 }
 
 function checkDailyCreditsButton() {
     const currentUser = RainbetUtils.getCurrentUser();
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userData = userdata[currentUser] || { lastDaily: 0 };
     const lastDaily = userData.lastDaily || 0;
     const now = Date.now();
@@ -255,8 +257,8 @@ function checkDailyCreditsButton() {
     }
 }
 
-function updateUserPoints() {
-    const points = RainbetUtils.getUserPoints();
+async function updateUserPoints() {
+    const points = await RainbetUtils.getUserPoints();
     document.getElementById('userPoints').textContent = points;
     document.getElementById('userShopPoints').textContent = points;
 }
@@ -265,7 +267,7 @@ function updateLeaderboard() {
     const leaderboardList = document.getElementById('leaderboardList');
     leaderboardList.innerHTML = '';
     
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userArray = [];
     
     for (const username in userdata) {
@@ -302,7 +304,7 @@ function updateLeaderboard() {
 
 function checkActiveItems() {
     const currentUser = RainbetUtils.getCurrentUser();
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata'));
+    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userData = userdata[currentUser] || { items: {}, itemTiers: {} };
     const now = Date.now();
     
@@ -425,7 +427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         attempts++;
     }
     
-    updateUserPoints();
+    await updateUserPoints();
     updateLeaderboard();
     checkActiveItems();
     checkDailyCreditsButton();
@@ -440,9 +442,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Refresh active items and leaderboard every minute
-    setInterval(() => {
+    setInterval(async () => {
         checkActiveItems();
-        updateUserPoints();
+        await updateUserPoints();
         updateLeaderboard();
     }, 60000);
 });
