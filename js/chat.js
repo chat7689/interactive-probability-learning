@@ -548,7 +548,10 @@ async function displayMessages() {
                 const messageDiv = document.createElement('div');
                 let className = 'message';
                 if (msg.username === currentUser) className += ' own';
-                if (msg.isSystem) className += ' system';
+                if (msg.isSystem) {
+                    className += ' system';
+                    if (msg.isWarning) className += ' warning';
+                }
                 messageDiv.className = className;
                 
                 // Apply user's purchased styles
@@ -590,7 +593,10 @@ async function displayMessages() {
             const messageDiv = document.createElement('div');
             let className = 'message';
             if (msg.username === currentUser) className += ' own';
-            if (msg.isSystem) className += ' system';
+            if (msg.isSystem) {
+                className += ' system';
+                if (msg.isWarning) className += ' warning';
+            }
             messageDiv.className = className;
             
             let usernameDisplay = msg.username;
@@ -796,6 +802,8 @@ async function confirmAdminAction() {
         errorDiv.textContent = 'Incorrect security code. Access denied.';
         // Log failed admin authentication attempt
         logSecurityEvent('FAILED_ADMIN_AUTH', currentUser, `Attempted code: ${password.substring(0, 2)}***`);
+        // Add warning message to chat
+        await RainbetUtils.addWarningMessage(`SECURITY ALERT: User "${currentUser}" attempted unauthorized admin access with incorrect code`);
         return;
     }
     
@@ -835,14 +843,18 @@ function cancelAdminAction() {
 
 function openAdmin() {
     document.getElementById('adminModal').style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
     loadUserPointsList();
     loadOnlineUsersList();
     loadGameToggles();
     loadGameMultipliers();
+    initializeAdminCollapsible();
+    refreshEconomicStats();
 }
 
 function closeAdmin() {
     document.getElementById('adminModal').style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restore background scrolling
 }
 
 async function updateChatName() {
@@ -1225,6 +1237,157 @@ async function updateIndividualMultipliers() {
         console.error('Error updating individual multipliers:', error);
         alert('Error updating individual multipliers');
     }
+}
+
+// Economy Control Functions
+async function updateBettingLimits() {
+    try {
+        const minBet = parseInt(document.getElementById('globalMinBet').value);
+        const maxBet = parseInt(document.getElementById('globalMaxBet').value);
+        
+        if (minBet >= maxBet) {
+            alert('Minimum bet must be less than maximum bet');
+            return;
+        }
+        
+        const limitsRef = window.firebaseRef(window.firebaseDb, 'economySettings/bettingLimits');
+        await window.firebaseSet(limitsRef, { minBet, maxBet });
+        
+        await RainbetUtils.addSystemMessage(`🏦 Admin updated betting limits: ${minBet}-${maxBet} points`);
+        logSecurityEvent('BETTING_LIMITS_UPDATED', RainbetUtils.getCurrentUser(), `Min: ${minBet}, Max: ${maxBet}`);
+        alert('Betting limits updated successfully!');
+    } catch (error) {
+        console.error('Error updating betting limits:', error);
+        alert('Error updating betting limits');
+    }
+}
+
+async function updateHouseEdge() {
+    try {
+        const houseEdge = parseFloat(document.getElementById('houseEdge').value);
+        const edgeRef = window.firebaseRef(window.firebaseDb, 'economySettings/houseEdge');
+        await window.firebaseSet(edgeRef, houseEdge);
+        
+        await RainbetUtils.addSystemMessage(`📈 Admin set house edge to ${houseEdge}%`);
+        logSecurityEvent('HOUSE_EDGE_UPDATED', RainbetUtils.getCurrentUser(), `New edge: ${houseEdge}%`);
+        alert('House edge updated successfully!');
+    } catch (error) {
+        console.error('Error updating house edge:', error);
+        alert('Error updating house edge');
+    }
+}
+
+async function updateDailyLimits() {
+    try {
+        const maxEarnings = parseInt(document.getElementById('maxDailyEarnings').value);
+        const creditBonus = parseInt(document.getElementById('dailyCreditBonus').value);
+        
+        const limitsRef = window.firebaseRef(window.firebaseDb, 'economySettings/dailyLimits');
+        await window.firebaseSet(limitsRef, { maxEarnings, creditBonus });
+        
+        await RainbetUtils.addSystemMessage(`⏰ Admin updated daily limits: Max earnings ${maxEarnings}, Bonus ${creditBonus}`);
+        logSecurityEvent('DAILY_LIMITS_UPDATED', RainbetUtils.getCurrentUser(), `Max: ${maxEarnings}, Bonus: ${creditBonus}`);
+        alert('Daily limits updated successfully!');
+    } catch (error) {
+        console.error('Error updating daily limits:', error);
+        alert('Error updating daily limits');
+    }
+}
+
+async function refreshEconomicStats() {
+    try {
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const usersSnapshot = await window.firebaseGet(usersRef);
+        
+        if (usersSnapshot.exists()) {
+            const users = usersSnapshot.val();
+            let totalPoints = 0;
+            let activeUsers = 0;
+            
+            Object.values(users).forEach(user => {
+                if (user.points) totalPoints += user.points;
+                if (user.lastActive && (Date.now() - user.lastActive) < 24 * 60 * 60 * 1000) {
+                    activeUsers++;
+                }
+            });
+            
+            document.getElementById('totalPoints').textContent = totalPoints.toLocaleString();
+            document.getElementById('activeUsersCount').textContent = activeUsers;
+        }
+        
+        // Get daily stats
+        const statsRef = window.firebaseRef(window.firebaseDb, `dailyStats/${new Date().toISOString().split('T')[0]}`);
+        const statsSnapshot = await window.firebaseGet(statsRef);
+        
+        if (statsSnapshot.exists()) {
+            const stats = statsSnapshot.val();
+            document.getElementById('gamesPlayedToday').textContent = stats.gamesPlayed || 0;
+            document.getElementById('houseProfitToday').textContent = (stats.houseProfit || 0).toLocaleString();
+        } else {
+            document.getElementById('gamesPlayedToday').textContent = '0';
+            document.getElementById('houseProfitToday').textContent = '0';
+        }
+        
+        logSecurityEvent('ECONOMIC_STATS_REFRESHED', RainbetUtils.getCurrentUser(), 'Admin refreshed economic statistics');
+    } catch (error) {
+        console.error('Error refreshing economic stats:', error);
+        alert('Error refreshing economic stats');
+    }
+}
+
+async function redistributeWealth() {
+    try {
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const usersSnapshot = await window.firebaseGet(usersRef);
+        
+        if (!usersSnapshot.exists()) return;
+        
+        const users = usersSnapshot.val();
+        const userEntries = Object.entries(users)
+            .filter(([_, user]) => user.points > 0)
+            .sort((a, b) => b[1].points - a[1].points);
+        
+        const topTenPercent = Math.max(1, Math.floor(userEntries.length * 0.1));
+        const redistributeAmount = Math.floor(userEntries[0][1].points * 0.1); // Take 10% from richest
+        
+        if (redistributeAmount > 10) {
+            // Take from top 10%
+            for (let i = 0; i < topTenPercent; i++) {
+                const [userId, user] = userEntries[i];
+                const takeAmount = Math.floor(user.points * 0.05); // 5% from each top user
+                user.points = Math.max(0, user.points - takeAmount);
+                await window.firebaseSet(window.firebaseRef(window.firebaseDb, `users/${userId}`), user);
+            }
+            
+            // Give to bottom users
+            const redistributePerUser = Math.floor(redistributeAmount / (userEntries.length - topTenPercent));
+            for (let i = topTenPercent; i < userEntries.length; i++) {
+                const [userId, user] = userEntries[i];
+                user.points += redistributePerUser;
+                await window.firebaseSet(window.firebaseRef(window.firebaseDb, `users/${userId}`), user);
+            }
+            
+            await RainbetUtils.addSystemMessage(`🏦 Admin redistributed ${redistributeAmount} points from top ${topTenPercent} users`);
+            logSecurityEvent('WEALTH_REDISTRIBUTED', RainbetUtils.getCurrentUser(), `Redistributed ${redistributeAmount} points`);
+            alert('Wealth redistribution completed!');
+        } else {
+            alert('Not enough wealth to redistribute');
+        }
+    } catch (error) {
+        console.error('Error redistributing wealth:', error);
+        alert('Error redistributing wealth');
+    }
+}
+
+// Admin Panel Collapsible Functionality
+function initializeAdminCollapsible() {
+    const collapsibleSections = document.querySelectorAll('.admin-section.collapsible h3');
+    collapsibleSections.forEach(header => {
+        header.addEventListener('click', function() {
+            const section = this.parentElement;
+            section.classList.toggle('collapsed');
+        });
+    });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

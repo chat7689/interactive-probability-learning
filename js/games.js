@@ -33,6 +33,27 @@
 let currentGame = null;
 let gameInProgress = false;
 
+// SECURITY: Bet amount locking functions
+function lockBetAmount() {
+    const betInput = document.getElementById('betAmount');
+    if (betInput) {
+        betInput.disabled = true;
+        betInput.style.backgroundColor = '#e74c3c';
+        betInput.style.color = 'white';
+        betInput.title = 'Bet locked during game - cannot change amount!';
+    }
+}
+
+function unlockBetAmount() {
+    const betInput = document.getElementById('betAmount');
+    if (betInput) {
+        betInput.disabled = false;
+        betInput.style.backgroundColor = '';
+        betInput.style.color = '';
+        betInput.title = '';
+    }
+}
+
 // Game balance constants
 const GAMES_CONFIG = {
     coinflip: { multiplier: 1.90, winChance: 0.5 },
@@ -69,6 +90,9 @@ function showGame(gameType) {
     document.getElementById('gamesGrid').style.display = 'none';
     document.getElementById('gameArea').style.display = 'block';
     document.getElementById('gameResult').innerHTML = '';
+    
+    // SECURITY: Enable bet input when starting new game
+    document.getElementById('betAmount').disabled = false;
     
     const gameContent = document.getElementById('gameContent');
     
@@ -147,6 +171,7 @@ function setCoinChoice(choice) {
 function flipCoin() {
     if (!coinChoice || gameInProgress) return;
     
+    lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
     if (!deductPoints(betAmount)) return;
     
@@ -207,6 +232,7 @@ function setDiceChoice(choice) {
 function rollDice() {
     if (!diceChoice || gameInProgress) return;
     
+    lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
     if (!deductPoints(betAmount)) return;
     
@@ -256,6 +282,7 @@ function setupSlots(container) {
 function spinSlots() {
     if (gameInProgress) return;
     
+    lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
     if (!deductPoints(betAmount)) return;
     
@@ -313,6 +340,7 @@ function setupCups(container) {
 function startCupGame() {
     if (gameInProgress) return;
     
+    lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
     if (!deductPoints(betAmount)) return;
     
@@ -435,8 +463,35 @@ function selectCup(cupIndex) {
     
     showGameResult(won, betAmount, GAMES_CONFIG.cups.multiplier, 
                   'The gold was under cup ' + (cupsWinningCup + 1) + '!');
+    
+    // Reset game state
+    setTimeout(() => {
+        resetCupsGame();
+    }, 2000);
+    
     gameInProgress = false;
     document.getElementById('startCupBtn').disabled = false;
+}
+
+function resetCupsGame() {
+    // Hide all coins
+    for (let i = 0; i < 3; i++) {
+        const coin = document.getElementById('coin' + i);
+        if (coin) {
+            coin.classList.remove('visible');
+        }
+    }
+    
+    // Clear selection and reset variables
+    selectedCup = null;
+    cupsGameStarted = false;
+    cupsWinningCup = null;
+    
+    // Clear message
+    const message = document.getElementById('cupGameMessage');
+    if (message) {
+        message.textContent = 'Choose a cup after the shuffle!';
+    }
 }
 
 // Blackjack Game - Fixed win/lose messages
@@ -507,6 +562,7 @@ function displayCards(hand, elementId) {
 function startBlackjack() {
     if (gameInProgress) return;
     
+    lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
     if (!deductPoints(betAmount)) return;
     
@@ -647,6 +703,7 @@ function setupLottery(container) {
 function playLottery() {
     if (gameInProgress) return;
     
+    lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
     if (!deductPoints(betAmount)) return;
     
@@ -725,6 +782,7 @@ function createMinesGrid() {
 function startMines() {
     if (gameInProgress) return;
     
+    lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
     if (!deductPoints(betAmount)) return;
     
@@ -840,6 +898,10 @@ function deductPoints(amount) {
 }
 
 function showGameResult(won, betAmount, multiplier, message) {
+    // SECURITY: Always unlock bet amount when game ends
+    unlockBetAmount();
+    gameInProgress = false;
+    
     const resultDiv = document.getElementById('gameResult');
     const resultClass = won ? 'win' : 'lose';
     const resultText = won ? 'YOU WON!' : 'YOU LOST!';
@@ -944,9 +1006,14 @@ let memoryLevel = 1;
 let memoryShowingSequence = false;
 
 function startMemoryGame() {
+    lockBetAmount();
+    const betAmount = parseInt(document.getElementById('betAmount').value);
+    if (!deductPoints(betAmount)) return;
+    
     memoryLevel = 1;
     memorySequence = [];
     playerSequence = [];
+    gameInProgress = true;
     nextMemoryLevel();
 }
 
@@ -1038,6 +1105,11 @@ let pokerHand = [];
 let pokerSelectedCards = [];
 
 function dealPokerHand() {
+    lockBetAmount();
+    const betAmount = parseInt(document.getElementById('betAmount').value);
+    if (!deductPoints(betAmount)) return;
+    
+    gameInProgress = true;
     const suits = ['♠', '♥', '♦', '♣'];
     const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
     const deck = [];
@@ -1171,6 +1243,11 @@ let reactionStartTime = 0;
 let reactionTimeout = null;
 
 function startReactionGame() {
+    lockBetAmount();
+    const betAmount = parseInt(document.getElementById('betAmount').value);
+    if (!deductPoints(betAmount)) return;
+    
+    gameInProgress = true;
     const circle = document.getElementById('reactionCircle');
     const status = document.getElementById('reactionStatus');
     
@@ -1281,6 +1358,7 @@ function setRouletteBet(type) {
 function spinRoulette() {
     if (!rouletteBet || gameInProgress) return;
     
+    lockBetAmount();
     gameInProgress = true;
     const betAmount = parseInt(document.getElementById('betAmount').value);
     
@@ -1362,6 +1440,7 @@ function setBaccaratBet(type) {
 function dealBaccarat() {
     if (!baccaratBet || gameInProgress) return;
     
+    lockBetAmount();
     gameInProgress = true;
     const betAmount = parseInt(document.getElementById('betAmount').value);
     
@@ -1425,6 +1504,10 @@ let crashPoint = 1;
 
 function startCrash() {
     if (gameInProgress) return;
+    
+    lockBetAmount();
+    const betAmount = parseInt(document.getElementById('betAmount').value);
+    if (!deductPoints(betAmount)) return;
     
     gameInProgress = true;
     crashActive = true;

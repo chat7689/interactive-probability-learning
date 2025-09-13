@@ -253,22 +253,66 @@ class RainbetUtils {
     // Message management
     static async addSystemMessage(text) {
         try {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const messageWithTime = `[${timeString}] ${text}`;
+            
             const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
             await window.firebasePush(messagesRef, {
                 username: 'System',
-                message: text,
+                message: messageWithTime,
                 timestamp: window.firebaseServerTimestamp(),
                 isSystem: true
             });
         } catch (error) {
             console.error('Error adding system message:', error);
             // Fallback to localStorage
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const messageWithTime = `[${timeString}] ${text}`;
+            
             const messages = JSON.parse(localStorage.getItem('chat_messages') || '[]');
             messages.push({
                 username: 'System',
-                message: text,
+                message: messageWithTime,
                 timestamp: Date.now(),
                 isSystem: true
+            });
+            if (messages.length > 50) {
+                messages.splice(0, messages.length - 50);
+            }
+            localStorage.setItem('chat_messages', JSON.stringify(messages));
+        }
+    }
+
+    static async addWarningMessage(text) {
+        try {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const warningText = `⚠️ [${timeString}] ${text}`;
+            
+            const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
+            await window.firebasePush(messagesRef, {
+                username: 'System',
+                message: warningText,
+                timestamp: window.firebaseServerTimestamp(),
+                isSystem: true,
+                isWarning: true
+            });
+        } catch (error) {
+            console.error('Error adding warning message:', error);
+            // Fallback to localStorage
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const warningText = `⚠️ [${timeString}] ${text}`;
+            
+            const messages = JSON.parse(localStorage.getItem('chat_messages') || '[]');
+            messages.push({
+                username: 'System',
+                message: warningText,
+                timestamp: Date.now(),
+                isSystem: true,
+                isWarning: true
             });
             if (messages.length > 50) {
                 messages.splice(0, messages.length - 50);

@@ -129,7 +129,7 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
         <div class="modal-content" style="max-width: 350px; text-align: center;">
             <h3 id="adminActionTitle">🔐 Enter Admin Security Code</h3>
             <div style="position: relative; width: 100%; margin: 15px 0;">
-                <input type="password" id="adminPasswordInput" placeholder="Enter security code (76897689)" style="width: 100%; padding: 12px; box-sizing: border-box; padding-right: 40px;">
+                <input type="password" id="adminPasswordInput" placeholder="Enter security code" style="width: 100%; padding: 12px; box-sizing: border-box; padding-right: 40px;">
                 <span onmouseenter="showPassword('adminPasswordInput')" onmouseleave="hidePassword('adminPasswordInput')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">👁️</span>
             </div>
             <div>
@@ -148,104 +148,179 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 <button class="close-btn" onclick="closeAdmin()">Close</button>
             </div>
             
-            <div class="admin-section">
-                <h3>💬 Chat Settings</h3>
-                <div class="form-group">
-                    <label>Chat Name:</label>
-                    <input type="text" id="chatNameInput" placeholder="Enter chat name">
+            <div class="admin-section collapsible">
+                <h3>🎛️ Basic Controls</h3>
+                <div class="admin-content">
+                    <div class="admin-group">
+                        <h4>💬 Chat Settings</h4>
+                        <div class="form-group">
+                            <label>Chat Name:</label>
+                            <input type="text" id="chatNameInput" placeholder="Enter chat name">
+                        </div>
+                        <button onclick="updateChatName()">Update Chat Name</button>
+                    </div>
+                    
+                    <div class="admin-group">
+                        <h4>🔧 System Actions</h4>
+                        <div class="button-group">
+                            <button onclick="clearAllMessages()" style="background: #e74c3c;">Clear All Messages</button>
+                            <button onclick="resetAllDailyCredits()" style="background: #e67e22;">Reset Daily Points</button>
+                        </div>
+                    </div>
                 </div>
-                <button onclick="updateChatName()">Update Chat Name</button>
             </div>
             
-            <div class="admin-section">
+            <div class="admin-section collapsible">
                 <h3>👥 User Management</h3>
-                <div class="form-group">
-                    <label>Username:</label>
-                    <input type="text" id="targetUsername" placeholder="Enter username">
+                <div class="admin-content">
+                    <div class="admin-group">
+                        <h4>💰 Points Management</h4>
+                        <div class="control-grid">
+                            <div>
+                                <div class="form-group">
+                                    <label>Username:</label>
+                                    <input type="text" id="targetUsername" placeholder="Enter username">
+                                </div>
+                                <div class="form-group">
+                                    <label>Points Amount:</label>
+                                    <input type="number" id="pointAmount" placeholder="Enter amount" min="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button onclick="givePointsToUser()">Give Points</button>
+                            <button onclick="givePointsToAll()" style="background: #f39c12;">Give 100 Points to All</button>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-group">
+                        <h4>⏱️ User Timeout</h4>
+                        <div class="control-grid">
+                            <div>
+                                <div class="form-group">
+                                    <label>Username:</label>
+                                    <input type="text" id="timeoutUsername" placeholder="Enter username">
+                                </div>
+                                <div class="form-group">
+                                    <label>Duration (minutes):</label>
+                                    <input type="number" id="timeoutDuration" placeholder="Enter minutes" min="1" max="1440" value="10">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button onclick="timeoutUser()" style="background: #e74c3c;">Timeout User</button>
+                            <button onclick="removeTimeout()" style="background: #27ae60;">Remove Timeout</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Points Amount:</label>
-                    <input type="number" id="pointAmount" placeholder="Enter amount" min="1">
-                </div>
-                <button onclick="givePointsToUser()">Give Points</button>
-                <button onclick="givePointsToAll()" style="background: #f39c12;">Give 100 Points to All</button>
             </div>
             
-            <div class="admin-section">
-                <h3>⏱️ User Timeout</h3>
-                <div class="form-group">
-                    <label>Username:</label>
-                    <input type="text" id="timeoutUsername" placeholder="Enter username">
-                </div>
-                <div class="form-group">
-                    <label>Duration (minutes):</label>
-                    <input type="number" id="timeoutDuration" placeholder="Enter minutes" min="1" max="1440" value="10">
-                </div>
-                <button onclick="timeoutUser()" style="background: #e74c3c;">Timeout User</button>
-                <button onclick="removeTimeout()" style="background: #27ae60;">Remove Timeout</button>
-            </div>
-            
-            <div class="admin-section">
-                <h3>🔧 System Actions</h3>
-                <button onclick="clearAllMessages()" style="background: #e74c3c;">Clear All Messages</button>
-                <button onclick="resetAllDailyCredits()" style="background: #e67e22;">Reset Daily Points</button>
-            </div>
-            
-            <div class="admin-section">
-                <h3>🟢 Online Users</h3>
-                <div id="onlineUsersList" style="max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px;"></div>
-            </div>
-            
-            <div class="admin-section">
+            <div class="admin-section collapsible">
                 <h3>🎮 Games Management</h3>
+                <div class="admin-content">
+                    <div class="admin-group">
+                        <h4>🎲 Game Toggles (Enable/Disable)</h4>
+                        <div class="game-toggles" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                            <label><input type="checkbox" id="toggle_coinflip" checked> 🪙 Coin Flip</label>
+                            <label><input type="checkbox" id="toggle_cups" checked> 🥤 Find the Gold</label>
+                            <label><input type="checkbox" id="toggle_dice" checked> 🎲 Lucky Dice</label>
+                            <label><input type="checkbox" id="toggle_slots" checked> 🎰 Fruit Slots</label>
+                            <label><input type="checkbox" id="toggle_blackjack" checked> 🃏 Blackjack</label>
+                            <label><input type="checkbox" id="toggle_lottery" checked> 🎫 Number Lottery</label>
+                            <label><input type="checkbox" id="toggle_mines" checked> 💣 Mines</label>
+                            <label><input type="checkbox" id="toggle_memory" checked> 🧠 Memory Match</label>
+                            <label><input type="checkbox" id="toggle_poker" checked> 🃏 5-Card Poker</label>
+                            <label><input type="checkbox" id="toggle_reaction" checked> ⚡ Quick Draw</label>
+                            <label><input type="checkbox" id="toggle_roulette" checked> 🎡 Roulette</label>
+                            <label><input type="checkbox" id="toggle_baccarat" checked> 🂠 Baccarat</label>
+                            <label><input type="checkbox" id="toggle_crash" checked> 📈 Crash</label>
+                        </div>
+                        <button onclick="updateAllGameToggles()" style="background: #3498db; margin-top: 10px;">Update Game Toggles</button>
+                    </div>
+                    
+                    <div class="admin-group">
+                        <h4>💰 Global Multiplier Control</h4>
+                        <div class="form-group">
+                            <label>Set All Games Multiplier:</label>
+                            <input type="number" id="globalMultiplier" placeholder="e.g., 2.0" min="0.1" max="10" step="0.1" value="2.0">
+                        </div>
+                        <button onclick="setGlobalMultiplier()" style="background: #e67e22;">Apply to All Games</button>
+                    </div>
+                    
+                    <div class="admin-group">
+                        <h4>🎯 Individual Game Multipliers</h4>
+                        <div class="game-multipliers" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; font-size: 13px;">
+                            <div>🪙 Coin Flip: <input type="number" id="mult_coinflip" step="0.1" min="0.1" max="10" value="1.9"></div>
+                            <div>🥤 Find Gold: <input type="number" id="mult_cups" step="0.1" min="0.1" max="10" value="2.85"></div>
+                            <div>🎲 Lucky Dice: <input type="number" id="mult_dice" step="0.1" min="0.1" max="10" value="3.0"></div>
+                            <div>🎰 Fruit Slots: <input type="number" id="mult_slots" step="0.1" min="0.1" max="10" value="4.0"></div>
+                            <div>🃏 Blackjack: <input type="number" id="mult_blackjack" step="0.1" min="0.1" max="10" value="1.9"></div>
+                            <div>🎫 Lottery: <input type="number" id="mult_lottery" step="0.1" min="0.1" max="10" value="10.0"></div>
+                            <div>💣 Mines: <input type="number" id="mult_mines" step="0.1" min="0.1" max="10" value="1.2"></div>
+                            <div>🧠 Memory: <input type="number" id="mult_memory" step="0.1" min="0.1" max="10" value="3.5"></div>
+                            <div>🃏 Poker: <input type="number" id="mult_poker" step="0.1" min="0.1" max="10" value="2.5"></div>
+                            <div>⚡ Quick Draw: <input type="number" id="mult_reaction" step="0.1" min="0.1" max="10" value="2.0"></div>
+                            <div>🎡 Roulette: <input type="number" id="mult_roulette" step="0.1" min="0.1" max="10" value="2.0"></div>
+                            <div>🂠 Baccarat: <input type="number" id="mult_baccarat" step="0.1" min="0.1" max="10" value="2.0"></div>
+                            <div>📈 Crash: <input type="number" id="mult_crash" step="0.1" min="0.1" max="10" value="2.0"></div>
+                        </div>
+                        <button onclick="updateIndividualMultipliers()" style="background: #27ae60; margin-top: 10px;">Update Individual Multipliers</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="admin-section">
+                <h3>🏦 Economy Controls</h3>
                 
                 <div style="margin-bottom: 15px;">
-                    <h4>🎲 Game Toggles (Enable/Disable)</h4>
-                    <div class="game-toggles" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <label><input type="checkbox" id="toggle_coinflip" checked> 🪙 Coin Flip</label>
-                        <label><input type="checkbox" id="toggle_cups" checked> 🥤 Find the Gold</label>
-                        <label><input type="checkbox" id="toggle_dice" checked> 🎲 Lucky Dice</label>
-                        <label><input type="checkbox" id="toggle_slots" checked> 🎰 Fruit Slots</label>
-                        <label><input type="checkbox" id="toggle_blackjack" checked> 🃏 Blackjack</label>
-                        <label><input type="checkbox" id="toggle_lottery" checked> 🎫 Number Lottery</label>
-                        <label><input type="checkbox" id="toggle_mines" checked> 💣 Mines</label>
-                        <label><input type="checkbox" id="toggle_memory" checked> 🧠 Memory Match</label>
-                        <label><input type="checkbox" id="toggle_poker" checked> 🃏 5-Card Poker</label>
-                        <label><input type="checkbox" id="toggle_reaction" checked> ⚡ Quick Draw</label>
-                        <label><input type="checkbox" id="toggle_roulette" checked> 🎡 Roulette</label>
-                        <label><input type="checkbox" id="toggle_baccarat" checked> 🂠 Baccarat</label>
-                        <label><input type="checkbox" id="toggle_crash" checked> 📈 Crash</label>
+                    <h4>💳 Betting Limits</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Global Min Bet:</label>
+                            <input type="number" id="globalMinBet" min="1" max="100" value="1" step="1">
+                        </div>
+                        <div>
+                            <label>Global Max Bet:</label>
+                            <input type="number" id="globalMaxBet" min="10" max="1000" value="100" step="10">
+                        </div>
                     </div>
-                    <button onclick="updateAllGameToggles()" style="background: #3498db; margin-top: 10px;">Update Game Toggles</button>
+                    <button onclick="updateBettingLimits()" style="background: #9b59b6; margin-top: 10px;">Update Betting Limits</button>
                 </div>
                 
                 <div style="margin-bottom: 15px;">
-                    <h4>💰 Global Multiplier Control</h4>
+                    <h4>📈 House Edge Control</h4>
                     <div class="form-group">
-                        <label>Set All Games Multiplier:</label>
-                        <input type="number" id="globalMultiplier" placeholder="e.g., 2.0" min="0.1" max="10" step="0.1" value="2.0">
+                        <label>House Edge Percentage (affects all multipliers):</label>
+                        <input type="number" id="houseEdge" min="0" max="50" step="1" value="5" placeholder="5%">
                     </div>
-                    <button onclick="setGlobalMultiplier()" style="background: #e67e22;">Apply to All Games</button>
+                    <button onclick="updateHouseEdge()" style="background: #34495e;">Apply House Edge</button>
                 </div>
                 
                 <div style="margin-bottom: 15px;">
-                    <h4>🎯 Individual Game Multipliers</h4>
-                    <div class="game-multipliers" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
-                        <div>🪙 Coin Flip: <input type="number" id="mult_coinflip" step="0.1" min="0.1" max="10" value="1.9"></div>
-                        <div>🥤 Find Gold: <input type="number" id="mult_cups" step="0.1" min="0.1" max="10" value="2.85"></div>
-                        <div>🎲 Lucky Dice: <input type="number" id="mult_dice" step="0.1" min="0.1" max="10" value="3.0"></div>
-                        <div>🎰 Fruit Slots: <input type="number" id="mult_slots" step="0.1" min="0.1" max="10" value="4.0"></div>
-                        <div>🃏 Blackjack: <input type="number" id="mult_blackjack" step="0.1" min="0.1" max="10" value="1.9"></div>
-                        <div>🎫 Lottery: <input type="number" id="mult_lottery" step="0.1" min="0.1" max="10" value="10.0"></div>
-                        <div>💣 Mines: <input type="number" id="mult_mines" step="0.1" min="0.1" max="10" value="1.2"></div>
-                        <div>🧠 Memory: <input type="number" id="mult_memory" step="0.1" min="0.1" max="10" value="3.5"></div>
-                        <div>🃏 Poker: <input type="number" id="mult_poker" step="0.1" min="0.1" max="10" value="2.5"></div>
-                        <div>⚡ Quick Draw: <input type="number" id="mult_reaction" step="0.1" min="0.1" max="10" value="2.0"></div>
-                        <div>🎡 Roulette: <input type="number" id="mult_roulette" step="0.1" min="0.1" max="10" value="2.0"></div>
-                        <div>🂠 Baccarat: <input type="number" id="mult_baccarat" step="0.1" min="0.1" max="10" value="2.0"></div>
-                        <div>📈 Crash: <input type="number" id="mult_crash" step="0.1" min="0.1" max="10" value="2.0"></div>
+                    <h4>⏰ Daily Limits</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Max Daily Earnings Per User:</label>
+                            <input type="number" id="maxDailyEarnings" min="100" max="10000" value="1000" step="100">
+                        </div>
+                        <div>
+                            <label>Daily Credit Bonus:</label>
+                            <input type="number" id="dailyCreditBonus" min="0" max="500" value="100" step="10">
+                        </div>
                     </div>
-                    <button onclick="updateIndividualMultipliers()" style="background: #27ae60; margin-top: 10px;">Update Individual Multipliers</button>
+                    <button onclick="updateDailyLimits()" style="background: #16a085;">Update Daily Limits</button>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <h4>📊 Economic Stats & Actions</h4>
+                    <div id="economicStats" style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                        <div>Total Points in Economy: <span id="totalPoints">Loading...</span></div>
+                        <div>Active Users: <span id="activeUsersCount">Loading...</span></div>
+                        <div>Games Played Today: <span id="gamesPlayedToday">Loading...</span></div>
+                        <div>House Profit Today: <span id="houseProfitToday">Loading...</span></div>
+                    </div>
+                    <button onclick="refreshEconomicStats()" style="background: #3498db;">Refresh Stats</button>
+                    <button onclick="redistributeWealth()" style="background: #e67e22; margin-left: 10px;">Redistribute Top 10%</button>
                 </div>
             </div>
             

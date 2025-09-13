@@ -155,6 +155,14 @@ body {
     border-color: #e67e22;
 }
 
+.message.system.warning { 
+    background: #e74c3c !important; 
+    color: white !important; 
+    font-weight: bold;
+    border-color: #c0392b;
+    animation: pulse 2s infinite;
+}
+
 .message-user { 
     font-weight: 600; 
     font-size: 12px; 
@@ -252,7 +260,8 @@ button:disabled {
     width: 100%; 
     height: 100%; 
     background: rgba(0,0,0,0.5); 
-    z-index: 1000; 
+    z-index: 1000;
+    overflow: hidden;
 }
 
 .modal-content { 
@@ -265,6 +274,7 @@ button:disabled {
     max-height: 80%; 
     overflow-y: auto; 
     border: 1px solid #ddd;
+    position: relative;
 }
 
 .modal-header { 
@@ -299,8 +309,14 @@ button:disabled {
     margin-bottom: 20px; 
     padding: 15px; 
     background: #f8f9fa; 
-    border-radius: 6px; 
+    border-radius: 8px; 
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.admin-section:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .admin-section h3 { 
@@ -308,6 +324,100 @@ button:disabled {
     margin-top: 0; 
     font-weight: 600;
     font-size: 1.1em;
+    padding: 10px 0;
+    border-bottom: 2px solid #3498db;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-section h3:hover {
+    color: #3498db;
+}
+
+.admin-section.collapsible h3::after {
+    content: '▼';
+    font-size: 0.8em;
+    transition: transform 0.3s ease;
+}
+
+.admin-section.collapsible.collapsed h3::after {
+    transform: rotate(-90deg);
+}
+
+.admin-section.collapsible.collapsed .admin-content {
+    display: none;
+}
+
+.admin-content {
+    padding-top: 15px;
+}
+
+.admin-group {
+    background: white;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #3498db;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-group h4 {
+    color: #34495e;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.admin-stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.admin-stat-card h5 {
+    margin: 0 0 5px 0;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.admin-stat-card .stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.button-group button {
+    flex: 1;
+    min-width: 120px;
 }
 
 /* Animations */
@@ -605,7 +715,35 @@ button:disabled {
 /* Game Modal Enhancements */
 .modal-content {
     position: relative;
-    overflow: hidden;
+}
+
+/* Ensure admin modal is scrollable */
+#adminModal .modal-content {
+    overflow-y: auto;
+    max-height: 85vh;
+    scrollbar-width: thin;
+    scrollbar-color: #3498db #f1f1f1;
+    overscroll-behavior: contain;
+    margin: 2vh auto;
+}
+
+/* Webkit scrollbar styling for admin modal */
+#adminModal .modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#adminModal .modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#adminModal .modal-content::-webkit-scrollbar-thumb {
+    background: #3498db;
+    border-radius: 4px;
+}
+
+#adminModal .modal-content::-webkit-scrollbar-thumb:hover {
+    background: #2980b9;
 }
 
 .game-interface {
