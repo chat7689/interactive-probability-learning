@@ -827,8 +827,15 @@ async function displayMessages() {
                 }
                 messageDiv.className = className;
                 
-                messageDiv.innerHTML = `<div class="message-user">${RainbetUtils.escapeHtml(msg.username)}</div>` +
-                                     `<div>${RainbetUtils.escapeHtml(msg.message)}</div>`;
+                // Format timestamp
+                const timestamp = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || Date.now();
+                const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                
+                messageDiv.innerHTML = `<div class="message-header">
+                    <span class="message-user">${RainbetUtils.escapeHtml(msg.username)}</span>
+                    <span class="message-time">${timeStr}</span>
+                </div>
+                <div class="message-content">${RainbetUtils.escapeHtml(msg.message)}</div>`;
                 messagesDiv.appendChild(messageDiv);
             }
             

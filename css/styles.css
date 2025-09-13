@@ -166,11 +166,28 @@ body {
     animation: pulse 2s infinite;
 }
 
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
 .message-user { 
     font-weight: 600; 
     font-size: 12px; 
-    margin-bottom: 6px; 
     opacity: 0.8;
+}
+
+.message-time {
+    font-size: 10px;
+    color: #999;
+    font-weight: 400;
+}
+
+.message-content {
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 .input-area { 
