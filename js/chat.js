@@ -70,6 +70,7 @@ let messageSending = false;
 let messagesSent = new Set();
 let recentUserMessages = new Map(); // Track recent messages by user with precise timing
 let lastDisplayedMessages = new Set(); // Track recently displayed message IDs
+let displayedMessageIds = new Set(); // Track which messages we've already displayed
 
 // Security logging function
 async function logSecurityEvent(eventType, user, action) {
@@ -679,34 +680,14 @@ async function sendMessage() {
         return;
     }
     
-    // Prevent sending if already sending or recently sent same message
+    // Simple duplicate prevention
     if (messageSending) {
+        console.log('Already sending a message, ignoring');
         return;
     }
     
-    const now = Date.now();
-    const messageKey = `${currentUser}_${message}_${Math.floor(now / 1000)}`;
-    
-    // Check if this exact message was sent recently
-    if (messagesSent.has(messageKey)) {
-        return;
-    }
-    
-    // Check if this user sent this exact message in the last 3 seconds (simple prevention)
-    const userMessageKey = `${currentUser}_${message}`;
-    if (recentUserMessages.has(userMessageKey)) {
-        const lastMessageTime = recentUserMessages.get(userMessageKey);
-        if (now - lastMessageTime < 3000) { // 3 second cooldown for identical messages
-            return;
-        }
-    }
-    
-    // Mark as sending and track the message
+    // Mark as sending
     messageSending = true;
-    messagesSent.add(messageKey);
-    recentUserMessages.set(userMessageKey, now);
-    lastSentMessage = message;
-    lastSentTimestamp = now;
     
     // Clear input immediately to prevent double-sending
     messageInput.value = '';
@@ -728,23 +709,10 @@ async function sendMessage() {
         });
         console.log('Message sent successfully to Firebase');
         
-        // Immediately refresh messages to show the new message
-        await displayMessages();
-        
         // Clear sending flag after successful send
         setTimeout(() => {
             messageSending = false;
-        }, 1000);
-        
-        // Clear tracking after 5 seconds
-        setTimeout(() => {
-            messagesSent.delete(messageKey);
-            recentUserMessages.delete(userMessageKey);
-            if (lastSentMessage === message) {
-                lastSentMessage = null;
-                lastSentTimestamp = 0;
-            }
-        }, 5000);
+        }, 500);
         
     } catch (error) {
         console.error('Error sending message:', error);
@@ -777,7 +745,6 @@ async function displayMessages() {
     }
     
     const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= messagesDiv.scrollTop + 1;
-    messagesDiv.innerHTML = '';
     
     try {
         const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
@@ -791,54 +758,29 @@ async function displayMessages() {
         
         if (snapshot.exists()) {
             const messagesData = snapshot.val();
-            const messages = Object.values(messagesData).sort((a, b) => {
+            const messages = Object.entries(messagesData).map(([id, msg]) => ({...msg, id}));
+            
+            // Sort by timestamp
+            messages.sort((a, b) => {
                 const timeA = a.timestamp?.seconds ? a.timestamp.seconds * 1000 : a.timestamp || 0;
                 const timeB = b.timestamp?.seconds ? b.timestamp.seconds * 1000 : b.timestamp || 0;
                 return timeA - timeB;
             });
             
-            // Keep only last 50 messages for display
-            let recentMessages = messages.slice(-50);
+            // Only add new messages that we haven't displayed yet
+            const newMessages = messages.filter(msg => !displayedMessageIds.has(msg.id));
             
-            // Enhanced duplicate detection and removal
-            const messageMap = new Map();
-            const filteredMessages = [];
+            // If we have no existing messages, show last 20, otherwise just new ones
+            const messagesToShow = messagesDiv.children.length === 0 ? messages.slice(-20) : newMessages;
             
-            for (const msg of recentMessages) {
-                const messageKey = `${msg.username}_${msg.message}`;
-                const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
-                
-                // Simple duplicate prevention - if same user+message exists within 2 seconds, skip
-                if (messageMap.has(messageKey)) {
-                    const existingTime = messageMap.get(messageKey);
-                    if (Math.abs(msgTime - existingTime) < 2000) {
-                        continue; // Skip this duplicate
-                    }
-                }
-                
-                // For current user's messages, check if we just sent this message
-                if (msg.username === currentUser) {
-                    const userMessageKey = `${currentUser}_${msg.message}`;
-                    if (recentUserMessages.has(userMessageKey)) {
-                        const recentTime = recentUserMessages.get(userMessageKey);
-                        // Skip if this Firebase message is very close to what we just sent
-                        if (Math.abs(msgTime - recentTime) < 1000 && Date.now() - recentTime < 3000) {
-                            continue;
-                        }
-                    }
-                }
-                
-                messageMap.set(messageKey, msgTime);
-                filteredMessages.push(msg);
-            }
-            
-            recentMessages = filteredMessages;
-            
-            for (const msg of recentMessages) {
+            for (const msg of messagesToShow) {
                 // Skip messages targeted to other users
                 if (msg.targetUser && msg.targetUser !== currentUser) {
                     continue;
                 }
+                
+                // Mark as displayed
+                displayedMessageIds.add(msg.id);
                 
                 const messageDiv = document.createElement('div');
                 let className = 'message';
@@ -849,33 +791,18 @@ async function displayMessages() {
                 }
                 messageDiv.className = className;
                 
-                // Apply user's purchased styles
-                if (msg.username !== 'System') {
-                    const userRef = window.firebaseRef(window.firebaseDb, `users/${msg.username}`);
-                    const userSnapshot = await window.firebaseGet(userRef);
-                    if (userSnapshot.exists()) {
-                        const userData = userSnapshot.val();
-                        if (userData && userData.items) {
-                            applyMessageStyles(messageDiv, userData.items);
-                        }
-                    }
-                }
-                
                 let usernameDisplay = msg.username;
-                if (msg.username !== 'System') {
-                    const userRef = window.firebaseRef(window.firebaseDb, `users/${msg.username}`);
-                    const userSnapshot = await window.firebaseGet(userRef);
-                    if (userSnapshot.exists()) {
-                        const userData = userSnapshot.val();
-                        if (userData && userData.items) {
-                            usernameDisplay = getUserDisplayName(msg.username, userData.items);
-                        }
-                    }
-                }
                 
                 messageDiv.innerHTML = `<div class="message-user">${RainbetUtils.escapeHtml(usernameDisplay)}</div>` +
                                      `<div>${RainbetUtils.escapeHtml(msg.message)}</div>`;
                 messagesDiv.appendChild(messageDiv);
+            }
+            
+            // Keep only last 100 displayed message IDs to prevent memory issues
+            if (displayedMessageIds.size > 100) {
+                const idsArray = Array.from(displayedMessageIds);
+                displayedMessageIds.clear();
+                idsArray.slice(-50).forEach(id => displayedMessageIds.add(id));
             }
         }
     } catch (error) {
