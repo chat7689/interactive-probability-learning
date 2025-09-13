@@ -875,6 +875,7 @@ function openAdmin() {
     initializeAdminCollapsible();
     refreshEconomicStats();
     refreshQuickStats();
+    loadCurrentTaxSettings();
 }
 
 function closeAdmin() {
@@ -1513,6 +1514,56 @@ async function redistributeWealth() {
     } catch (error) {
         console.error('Error redistributing wealth:', error);
         alert('Error redistributing wealth');
+    }
+}
+
+async function updateTaxSettings() {
+    try {
+        const taxRate = parseFloat(document.getElementById('globalTaxRate').value) / 100;
+        const flatTax = parseInt(document.getElementById('flatTaxAmount').value) || 0;
+        const taxEnabled = document.getElementById('taxEnabled').checked;
+        
+        // Update global variables in games.js
+        if (window.setGlobalTaxSettings) {
+            window.setGlobalTaxSettings(taxRate, flatTax, taxEnabled);
+        }
+        
+        // Save to Firebase for persistence
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/tax');
+        await window.firebaseSet(taxRef, {
+            rate: taxRate,
+            flatAmount: flatTax,
+            enabled: taxEnabled
+        });
+        
+        // Update display
+        document.getElementById('currentTaxRate').textContent = 
+            taxEnabled ? `${Math.round(taxRate * 100)}%` : 'Disabled';
+        
+        await RainbetUtils.addSystemMessage(`Admin updated tax settings: ${Math.round(taxRate * 100)}% rate, ${flatTax} flat tax, ${taxEnabled ? 'enabled' : 'disabled'}`);
+        logSecurityEvent('TAX_SETTINGS_UPDATED', RainbetUtils.getCurrentUser(), `Rate: ${Math.round(taxRate * 100)}%, Flat: ${flatTax}, Enabled: ${taxEnabled}`);
+        alert('Tax settings updated successfully!');
+    } catch (error) {
+        console.error('Error updating tax settings:', error);
+        alert('Error updating tax settings');
+    }
+}
+
+async function loadCurrentTaxSettings() {
+    try {
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/tax');
+        const snapshot = await window.firebaseGet(taxRef);
+        
+        if (snapshot.exists()) {
+            const settings = snapshot.val();
+            document.getElementById('globalTaxRate').value = Math.round((settings.rate || 0.05) * 100);
+            document.getElementById('flatTaxAmount').value = settings.flatAmount || 0;
+            document.getElementById('taxEnabled').checked = settings.enabled !== undefined ? settings.enabled : true;
+            document.getElementById('currentTaxRate').textContent = 
+                settings.enabled ? `${Math.round((settings.rate || 0.05) * 100)}%` : 'Disabled';
+        }
+    } catch (error) {
+        console.error('Error loading current tax settings:', error);
     }
 }
 

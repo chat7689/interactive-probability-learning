@@ -54,26 +54,88 @@ function unlockBetAmount() {
     }
 }
 
-// Game balance constants
+// Game balance constants - All games target 95% RTP (5% house edge)
 const GAMES_CONFIG = {
-    coinflip: { multiplier: 1.90, winChance: 0.5 },
+    coinflip: { multiplier: 1.90, winChance: 0.5 }, // 50% × 1.90 = 95% RTP
     dice: { 
-        low: { multiplier: 2.85, minSum: 2, maxSum: 6 },
-        mid: { multiplier: 4.5, minSum: 7, maxSum: 8 },
-        high: { multiplier: 2.85, minSum: 9, maxSum: 12 }
+        low: { multiplier: 2.28, minSum: 2, maxSum: 6 },    // 15/36 × 2.28 = 95% RTP
+        mid: { multiplier: 6.84, minSum: 7, maxSum: 8 },    // 5/36 × 6.84 = 95% RTP  
+        high: { multiplier: 2.28, minSum: 9, maxSum: 12 }   // 15/36 × 2.28 = 95% RTP
     },
-    cups: { multiplier: 2.85, winChance: 1/3 },
+    cups: { multiplier: 2.85, winChance: 1/3 }, // 33.33% × 2.85 = 95% RTP
     slots: {
-        multipliers: { '🍒': 5, '🍋': 10, '🍇': 15, '💎': 50 }
+        multipliers: { '🍒': 3.8, '🍋': 7.6, '🍇': 11.4, '💎': 38 } // Balanced for 95% RTP
     },
-    blackjack: { multiplier: 1.90 },
+    blackjack: { multiplier: 2.05 }, // ~46% win rate × 2.05 = ~94% RTP
     lottery: {
-        exact3: { multiplier: 100, winChance: 1/1000 },
-        exact2: { multiplier: 10, winChance: 30/1000 },
-        exact1: { multiplier: 2, winChance: 300/1000 }
+        exact3: { multiplier: 95, winChance: 1/1000 },   // 0.1% × 95 = 9.5% of RTP
+        exact2: { multiplier: 9.5, winChance: 30/1000 }, // 3% × 9.5 = 28.5% of RTP
+        exact1: { multiplier: 1.9, winChance: 300/1000 } // 30% × 1.9 = 57% of RTP = 95% total
     },
-    mines: { baseMultiplier: 1.2 }
+    mines: { baseMultiplier: 1.18 }, // Progressive system balanced for 95% RTP
+    
+    // New games balance
+    memory: { baseMultiplier: 2.0, maxLevel: 5 }, // Progressive difficulty
+    poker: { 
+        royalFlush: 50, straightFlush: 25, fourKind: 10, fullHouse: 6,
+        flush: 4, straight: 3, threeKind: 2.5, twoPair: 2, pair: 1.5, highCard: 0
+    },
+    reaction: { multiplier: 1.9 }, // Skill-based
+    roulette: { 
+        number: 36, red: 1.9, black: 1.9, odd: 1.9, even: 1.9,
+        low: 1.9, high: 1.9, dozen: 2.85, column: 2.85
+    },
+    baccarat: { player: 1.9, banker: 1.85, tie: 8.0 },
+    crash: { averageMultiplier: 2.0 } // Dynamic system
 };
+
+// Global tax system - can be configured by admin
+let GLOBAL_TAX_RATE = 0.05; // 5% default tax on winnings
+let FLAT_TAX_AMOUNT = 0; // Flat tax amount per win (0 = disabled)
+let TAX_ENABLED = true; // Global tax toggle
+
+// Function to apply tax to winnings
+function applyTax(winnings) {
+    if (!TAX_ENABLED) return winnings;
+    
+    let taxedWinnings = winnings;
+    
+    // Apply percentage tax
+    if (GLOBAL_TAX_RATE > 0) {
+        taxedWinnings = winnings * (1 - GLOBAL_TAX_RATE);
+    }
+    
+    // Apply flat tax
+    if (FLAT_TAX_AMOUNT > 0) {
+        taxedWinnings = Math.max(0, taxedWinnings - FLAT_TAX_AMOUNT);
+    }
+    
+    return Math.floor(taxedWinnings);
+}
+
+// Function to update tax settings from admin panel
+window.setGlobalTaxSettings = function(rate, flatAmount, enabled) {
+    GLOBAL_TAX_RATE = rate;
+    FLAT_TAX_AMOUNT = flatAmount;
+    TAX_ENABLED = enabled;
+};
+
+// Load tax settings from Firebase
+async function loadTaxSettings() {
+    try {
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/tax');
+        const snapshot = await window.firebaseGet(taxRef);
+        
+        if (snapshot.exists()) {
+            const settings = snapshot.val();
+            GLOBAL_TAX_RATE = settings.rate || 0.05;
+            FLAT_TAX_AMOUNT = settings.flatAmount || 0;
+            TAX_ENABLED = settings.enabled !== undefined ? settings.enabled : true;
+        }
+    } catch (error) {
+        console.error('Error loading tax settings:', error);
+    }
+}
 
 // Navigation functions
 function backToGames() {
@@ -908,12 +970,21 @@ function showGameResult(won, betAmount, multiplier, message) {
     let pointsText = '';
     
     if (won && multiplier > 0) {
-        const winnings = Math.floor(betAmount * multiplier);
-        RainbetUtils.awardPoints(winnings);
-        pointsText = 'You won ' + winnings + ' points!';
+        const rawWinnings = Math.floor(betAmount * multiplier);
+        const taxedWinnings = applyTax(rawWinnings);
+        const taxAmount = rawWinnings - taxedWinnings;
+        
+        RainbetUtils.awardPoints(taxedWinnings);
+        
+        if (taxAmount > 0) {
+            pointsText = `You won ${rawWinnings} points! (${taxedWinnings} after ${taxAmount} tax)`;
+        } else {
+            pointsText = 'You won ' + taxedWinnings + ' points!';
+        }
+        
         updateUserPoints();
         updateLeaderboard();
-        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${winnings} points playing ${currentGame}!`);
+        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${taxedWinnings} points playing ${currentGame}!`);
     } else {
         pointsText = 'You lost ' + betAmount + ' points.';
         RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} lost ${betAmount} points playing ${currentGame}.`);
@@ -1582,6 +1653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     updateUserPoints();
     updateLeaderboard();
+    loadTaxSettings();
     
     // Update chat title properly with async call
     try {

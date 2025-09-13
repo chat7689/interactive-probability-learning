@@ -361,12 +361,34 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 </div>
                 
                 <div style="margin-bottom: 15px;">
+                    <h4>💸 Global Tax System</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Tax Rate (%):</label>
+                            <input type="number" id="globalTaxRate" min="0" max="50" step="1" value="5" placeholder="5%">
+                        </div>
+                        <div>
+                            <label>Flat Tax Amount:</label>
+                            <input type="number" id="flatTaxAmount" min="0" max="100" step="1" value="0" placeholder="0 points">
+                        </div>
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="taxEnabled" checked>
+                            Enable Global Tax System
+                        </label>
+                    </div>
+                    <button onclick="updateTaxSettings()" style="background: #8e44ad;">Update Tax Settings</button>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
                     <h4>📊 Economic Stats & Actions</h4>
                     <div id="economicStats" style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
                         <div>Total Points in Economy: <span id="totalPoints">Loading...</span></div>
                         <div>Active Users: <span id="activeUsersCount">Loading...</span></div>
                         <div>Games Played Today: <span id="gamesPlayedToday">Loading...</span></div>
                         <div>House Profit Today: <span id="houseProfitToday">Loading...</span></div>
+                        <div>Current Tax Rate: <span id="currentTaxRate">5%</span></div>
                     </div>
                     <button onclick="refreshEconomicStats()" style="background: #3498db;">Refresh Stats</button>
                     <button onclick="redistributeWealth()" style="background: #e67e22; margin-left: 10px;">Redistribute Top 10%</button>
