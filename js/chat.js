@@ -672,7 +672,6 @@ async function sendMessage() {
         return;
     }
     
-    const currentUser = RainbetUtils.getCurrentUser();
     const now = Date.now();
     const messageKey = `${currentUser}_${message}_${Math.floor(now / 1000)}`;
     
