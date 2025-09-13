@@ -205,17 +205,32 @@ async function register() {
 }
 
 async function login() {
+    console.log('Login function called');
+    
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
     
+    console.log('Login attempt for username:', username);
+    
     if (!username || !password) {
+        console.log('Missing username or password');
         RainbetUtils.showMessage('Please enter username and password', true);
         return;
     }
     
     try {
+        console.log('Checking Firebase for user...');
+        
+        if (!window.firebaseDb) {
+            console.error('Firebase not available!');
+            RainbetUtils.showMessage('Database not available. Please try again.', true);
+            return;
+        }
+        
         const accountRef = window.firebaseRef(window.firebaseDb, `accounts/${username}`);
         const accountSnapshot = await window.firebaseGet(accountRef);
+        
+        console.log('Account lookup complete, exists:', accountSnapshot.exists());
         
         if (!accountSnapshot.exists()) {
             RainbetUtils.showMessage('Username not found', true);
@@ -224,13 +239,18 @@ async function login() {
         
         const accountData = accountSnapshot.val();
         if (accountData.password !== password) {
+            console.log('Password mismatch');
             RainbetUtils.showMessage('Wrong password', true);
             return;
         }
         
+        console.log('Login successful, setting user...');
         RainbetUtils.setCurrentUser(username, accountData.isAdmin || false);
+        
+        console.log('Entering chat...');
         await enterChat();
         
+        console.log('Setting user online status...');
         // Set user as online
         const onlineRef = window.firebaseRef(window.firebaseDb, `online/${username}`);
         await window.firebaseSet(onlineRef, {
@@ -241,6 +261,8 @@ async function login() {
         // Remove user from online list when they disconnect
         const onDisconnectRef = window.firebaseOnDisconnect(onlineRef);
         onDisconnectRef.remove();
+        
+        console.log('Login complete!');
         
     } catch (error) {
         console.error('Login error:', error);
@@ -2156,38 +2178,66 @@ async function showVerifiedAdmins() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Wait for Firebase to be available
-    let attempts = 0;
-    while (!window.firebaseDb && attempts < 50) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-    }
-    
-    if (!window.firebaseDb) {
-        console.warn('Firebase not available, using fallback localStorage mode');
-        RainbetUtils.initializeLocalData();
-    }
-    
-    // Check if user is already logged in
-    const currentUser = RainbetUtils.getCurrentUser();
-    if (currentUser) {
-        await enterChat();
-    }
-    
-    // Enter key support
-    document.getElementById('messageInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
+    try {
+        console.log('DOM loaded, initializing...');
+        
+        // Wait for Firebase to be available
+        let attempts = 0;
+        while (!window.firebaseDb && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
         }
-    });
-    
-    // Login form enter key support
-    ['loginUsername', 'loginPassword'].forEach(id => {
-        document.getElementById(id)?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                login();
+        
+        if (!window.firebaseDb) {
+            console.warn('Firebase not available, using fallback localStorage mode');
+            try {
+                RainbetUtils.initializeLocalData();
+            } catch (error) {
+                console.error('Error initializing local data:', error);
+            }
+        }
+        
+        // Check if user is already logged in - but don't let this break the page
+        try {
+            const currentUser = RainbetUtils.getCurrentUser();
+            if (currentUser) {
+                console.log('User already logged in:', currentUser);
+                await enterChat();
+            } else {
+                console.log('No user logged in, showing login screen');
+            }
+        } catch (error) {
+            console.error('Error checking current user:', error);
+            // Continue anyway so login form works
+        }
+        
+        // Enter key support - only add if elements exist
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+        
+        // Login form enter key support
+        ['loginUsername', 'loginPassword'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        login();
+                    }
+                });
             }
         });
-    });
+        
+        console.log('Initialization complete');
+        
+    } catch (error) {
+        console.error('Critical error in DOMContentLoaded:', error);
+        // Don't let initialization errors break the whole page
+    }
 });
