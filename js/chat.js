@@ -342,10 +342,13 @@ function updateOnlineCount(snapshot) {
 // Message functions
 async function sendMessage() {
     const messageInput = document.getElementById('messageInput');
+    if (!messageInput) return; // Element doesn't exist, probably not in chat
+    
     const message = messageInput.value.trim();
     if (!message) return;
     
     const currentUser = RainbetUtils.getCurrentUser();
+    if (!currentUser) return; // Not logged in
     if (await isUserTimedOut(currentUser)) {
         const userRef = window.firebaseRef(window.firebaseDb, `users/${currentUser}`);
         const snapshot = await window.firebaseGet(userRef);
@@ -671,7 +674,12 @@ async function sendMessage() {
     messageInput.value = '';
     
     // Immediately display the user's message locally (before Firebase)
-    await displayUserMessageImmediately(currentUser, message, now);
+    try {
+        await displayUserMessageImmediately(currentUser, message, now);
+    } catch (error) {
+        console.error('Error displaying message immediately:', error);
+        // Continue with Firebase send even if local display fails
+    }
     
     // Send message to Firebase
     try {
@@ -725,6 +733,10 @@ async function sendMessage() {
 // Display user's message immediately without waiting for Firebase
 async function displayUserMessageImmediately(username, message, timestamp) {
     const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) {
+        // If messages div doesn't exist, we're probably not in chat yet
+        return;
+    }
     const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= messagesDiv.scrollTop + 1;
     
     const messageDiv = document.createElement('div');
@@ -772,6 +784,11 @@ async function displayUserMessageImmediately(username, message, timestamp) {
 
 async function displayMessages() {
     const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) {
+        // Messages div doesn't exist, probably not in chat mode yet
+        return;
+    }
+    
     const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= messagesDiv.scrollTop + 1;
     
     // Preserve local user messages that were displayed immediately
