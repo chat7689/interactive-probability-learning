@@ -319,7 +319,7 @@ function setupMessageListener() {
     const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
     messageListener = window.firebaseOnValue(messagesRef, (snapshot) => {
         const now = Date.now();
-        console.log('Firebase message listener triggered');
+        console.log(`>>> FIREBASE LISTENER TRIGGERED at ${now}`);
         
         if (!RainbetUtils.getCurrentUser()) {
             console.log('No current user, skipping message update');
@@ -328,19 +328,21 @@ function setupMessageListener() {
         
         // Prevent too frequent updates (minimum 200ms between calls)
         if (now - lastListenerTrigger < 200) {
-            console.log('Too frequent, skipping listener trigger');
+            console.log(`Too frequent (${now - lastListenerTrigger}ms), skipping listener trigger`);
             return;
         }
         
         lastListenerTrigger = now;
+        console.log('Setting timeout to display messages in 200ms...');
         
         // Clear any pending timeout and set a new one
         if (displayMessagesTimeout) {
+            console.log('Clearing existing timeout');
             clearTimeout(displayMessagesTimeout);
         }
         
         displayMessagesTimeout = setTimeout(() => {
-            console.log('Displaying messages from listener...');
+            console.log(`>>> DISPLAYING MESSAGES at ${Date.now()}`);
             displayMessages();
         }, 200); // 200ms delay to batch updates
     });
@@ -390,7 +392,9 @@ function updateOnlineCount(snapshot) {
 
 // Message functions
 async function sendMessage() {
-    console.log('sendMessage function called');
+    const startTime = Date.now();
+    console.log(`=== SEND MESSAGE START ${startTime} ===`);
+    
     const messageInput = document.getElementById('messageInput');
     if (!messageInput) {
         console.error('Message input not found');
@@ -399,7 +403,10 @@ async function sendMessage() {
     
     const message = messageInput.value.trim();
     console.log('Message to send:', message);
-    if (!message) return;
+    if (!message) {
+        console.log('Empty message, returning');
+        return;
+    }
     
     const currentUser = RainbetUtils.getCurrentUser();
     console.log('Current user:', currentUser);
@@ -689,12 +696,13 @@ async function sendMessage() {
     
     // Simple duplicate prevention
     if (messageSending) {
-        console.log('Already sending a message, ignoring');
+        console.log('DUPLICATE SEND BLOCKED - already sending a message');
         return;
     }
     
     // Mark as sending
     messageSending = true;
+    console.log('Set messageSending = true');
     
     // Clear input immediately to prevent double-sending
     messageInput.value = '';
@@ -715,10 +723,12 @@ async function sendMessage() {
             timestamp: window.firebaseServerTimestamp()
         });
         console.log('Message sent successfully to Firebase');
+        console.log(`=== SEND MESSAGE END ${Date.now()} ===`);
         
         // Clear sending flag after successful send
         setTimeout(() => {
             messageSending = false;
+            console.log('messageSending reset to false');
         }, 500);
         
     } catch (error) {
@@ -744,7 +754,8 @@ async function sendMessage() {
 }
 
 async function displayMessages() {
-    console.log('displayMessages called');
+    const callTime = Date.now();
+    console.log(`*** DISPLAY MESSAGES CALLED at ${callTime} ***`);
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) {
         console.error('Messages div not found');
@@ -779,9 +790,11 @@ async function displayMessages() {
             
             // Show last 50 messages
             const recentMessages = messages.slice(-50);
+            console.log(`Total messages in Firebase: ${messages.length}, showing last ${recentMessages.length}`);
             
             // Simple duplicate prevention - track by content and user within 2 seconds
             const seenMessages = new Map();
+            let displayedCount = 0;
             
             for (const msg of recentMessages) {
                 if (msg.targetUser && msg.targetUser !== currentUser) {
@@ -795,12 +808,15 @@ async function displayMessages() {
                 if (seenMessages.has(msgKey)) {
                     const lastTime = seenMessages.get(msgKey);
                     if (Math.abs(msgTime - lastTime) < 2000) {
+                        console.log(`Skipping duplicate: ${msgKey}`);
                         continue;
                     }
                 }
                 seenMessages.set(msgKey, msgTime);
                 
                 displayedMessageIds.add(msg.id);
+                displayedCount++;
+                console.log(`Displaying message ${displayedCount}: ${msg.username}: ${msg.message}`);
                 
                 const messageDiv = document.createElement('div');
                 let className = 'message';
@@ -815,6 +831,8 @@ async function displayMessages() {
                                      `<div>${RainbetUtils.escapeHtml(msg.message)}</div>`;
                 messagesDiv.appendChild(messageDiv);
             }
+            
+            console.log(`*** DISPLAY COMPLETE: ${displayedCount} messages shown ***`);
         }
     } catch (error) {
         console.error('Error loading messages:', error);
