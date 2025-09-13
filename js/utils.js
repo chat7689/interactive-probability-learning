@@ -253,28 +253,20 @@ class RainbetUtils {
     // Message management
     static async addSystemMessage(text) {
         try {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString();
-            const messageWithTime = `[${timeString}] ${text}`;
-            
             const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
             await window.firebasePush(messagesRef, {
                 username: 'System',
-                message: messageWithTime,
+                message: text,
                 timestamp: window.firebaseServerTimestamp(),
                 isSystem: true
             });
         } catch (error) {
             console.error('Error adding system message:', error);
             // Fallback to localStorage
-            const now = new Date();
-            const timeString = now.toLocaleTimeString();
-            const messageWithTime = `[${timeString}] ${text}`;
-            
             const messages = JSON.parse(localStorage.getItem('chat_messages') || '[]');
             messages.push({
                 username: 'System',
-                message: messageWithTime,
+                message: text,
                 timestamp: Date.now(),
                 isSystem: true
             });
@@ -287,9 +279,7 @@ class RainbetUtils {
 
     static async addWarningMessage(text) {
         try {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString();
-            const warningText = `⚠️ [${timeString}] ${text}`;
+            const warningText = `⚠️ ${text}`;
             
             const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
             await window.firebasePush(messagesRef, {
@@ -302,9 +292,7 @@ class RainbetUtils {
         } catch (error) {
             console.error('Error adding warning message:', error);
             // Fallback to localStorage
-            const now = new Date();
-            const timeString = now.toLocaleTimeString();
-            const warningText = `⚠️ [${timeString}] ${text}`;
+            const warningText = `⚠️ ${text}`;
             
             const messages = JSON.parse(localStorage.getItem('chat_messages') || '[]');
             messages.push({
