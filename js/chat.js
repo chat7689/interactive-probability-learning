@@ -66,6 +66,10 @@ let messageListener = null;
 let onlineUsersListener = null;
 let lastSentMessage = null;
 let lastSentTimestamp = 0;
+let messageSending = false;
+let messagesSent = new Set();
+let recentUserMessages = new Map(); // Track recent messages by user with precise timing
+let lastDisplayedMessages = new Set(); // Track recently displayed message IDs
 
 // Security logging function
 async function logSecurityEvent(eventType, user, action) {
@@ -273,7 +277,9 @@ async function enterChat() {
     }, 30000);
 }
 
-// Real-time message listener
+// Real-time message listener with intelligent throttling
+let displayMessagesTimeout = null;
+let lastMessageListenerTrigger = 0;
 function setupMessageListener() {
     if (messageListener) {
         window.firebaseOff(window.firebaseRef(window.firebaseDb, 'messages'), 'value', messageListener);
@@ -281,7 +287,25 @@ function setupMessageListener() {
     
     const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
     messageListener = window.firebaseOnValue(messagesRef, (snapshot) => {
-        displayMessages();
+        const now = Date.now();
+        
+        // If we just sent a message in the last 3 seconds, be more conservative
+        const recentSend = messageSending || (lastSentTimestamp && now - lastSentTimestamp < 3000);
+        const delay = recentSend ? 250 : 100; // Longer delay if we recently sent
+        
+        // Prevent too frequent updates
+        if (now - lastMessageListenerTrigger < 50) {
+            return;
+        }
+        lastMessageListenerTrigger = now;
+        
+        // Throttle rapid message updates to prevent duplicates
+        if (displayMessagesTimeout) {
+            clearTimeout(displayMessagesTimeout);
+        }
+        displayMessagesTimeout = setTimeout(() => {
+            displayMessages();
+        }, delay);
     });
 }
 
@@ -600,9 +624,38 @@ async function sendMessage() {
         return;
     }
     
-    // Track the message being sent to prevent duplicates
+    // Prevent sending if already sending or recently sent same message
+    if (messageSending) {
+        return;
+    }
+    
+    const currentUser = RainbetUtils.getCurrentUser();
+    const now = Date.now();
+    const messageKey = `${currentUser}_${message}_${Math.floor(now / 1000)}`;
+    
+    // Check if this exact message was sent recently
+    if (messagesSent.has(messageKey)) {
+        return;
+    }
+    
+    // Check if this user sent this exact message in the last 5 seconds
+    const userMessageKey = `${currentUser}_${message}`;
+    if (recentUserMessages.has(userMessageKey)) {
+        const lastMessageTime = recentUserMessages.get(userMessageKey);
+        if (now - lastMessageTime < 5000) { // 5 second cooldown for identical messages
+            return;
+        }
+    }
+    
+    // Mark as sending and track the message
+    messageSending = true;
+    messagesSent.add(messageKey);
+    recentUserMessages.set(userMessageKey, now);
     lastSentMessage = message;
-    lastSentTimestamp = Date.now();
+    lastSentTimestamp = now;
+    
+    // Clear input immediately to prevent double-sending
+    messageInput.value = '';
     
     // Send message to Firebase
     try {
@@ -613,15 +666,20 @@ async function sendMessage() {
             timestamp: window.firebaseServerTimestamp()
         });
         
-        messageInput.value = '';
-        
-        // Clear tracking after 3 seconds
+        // Clear sending flag after successful send
         setTimeout(() => {
+            messageSending = false;
+        }, 1000);
+        
+        // Clear tracking after 10 seconds
+        setTimeout(() => {
+            messagesSent.delete(messageKey);
+            recentUserMessages.delete(userMessageKey);
             if (lastSentMessage === message) {
                 lastSentMessage = null;
                 lastSentTimestamp = 0;
             }
-        }, 3000);
+        }, 10000);
         
     } catch (error) {
         console.error('Error sending message:', error);
@@ -638,7 +696,9 @@ async function sendMessage() {
         }
         localStorage.setItem('chat_messages', JSON.stringify(messages));
         
-        messageInput.value = '';
+        // Reset sending flag in error case
+        messageSending = false;
+        
         await displayMessages();
     }
 }
@@ -664,23 +724,53 @@ async function displayMessages() {
             // Keep only last 50 messages for display
             let recentMessages = messages.slice(-50);
             
-            // Filter out potential duplicates for the current user
-            if (lastSentMessage && lastSentTimestamp) {
-                const timeDiff = Date.now() - lastSentTimestamp;
-                if (timeDiff < 2000) { // Within 2 seconds of sending
-                    // Count how many identical messages from current user in recent messages
-                    let duplicateCount = 0;
-                    for (let i = recentMessages.length - 1; i >= 0; i--) {
-                        const msg = recentMessages[i];
-                        if (msg.username === currentUser && msg.message === lastSentMessage) {
-                            duplicateCount++;
-                            if (duplicateCount > 1) {
-                                // Remove the duplicate (keep the first occurrence)
-                                recentMessages.splice(i, 1);
-                            }
+            // Enhanced duplicate detection and removal
+            const messageMap = new Map();
+            const filteredMessages = [];
+            const currentUser = RainbetUtils.getCurrentUser();
+            
+            for (const msg of recentMessages) {
+                const messageKey = `${msg.username}_${msg.message}`;
+                const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
+                const messageId = `${msg.username}_${msg.message}_${msgTime}`;
+                
+                // Skip if we've already displayed this exact message recently
+                if (lastDisplayedMessages.has(messageId)) {
+                    continue;
+                }
+                
+                // For current user's messages, be extra strict about duplicates
+                if (msg.username === currentUser) {
+                    const userMessageKey = `${currentUser}_${msg.message}`;
+                    if (recentUserMessages.has(userMessageKey)) {
+                        const recentTime = recentUserMessages.get(userMessageKey);
+                        // If this message is very close to what we just sent, and we sent it recently, skip it
+                        if (Math.abs(msgTime - recentTime) < 2000 && Date.now() - recentTime < 8000) {
+                            continue;
                         }
                     }
                 }
+                
+                if (messageMap.has(messageKey)) {
+                    const existingTime = messageMap.get(messageKey);
+                    // If messages are within 2 seconds of each other, it's likely a duplicate
+                    if (Math.abs(msgTime - existingTime) < 2000) {
+                        continue; // Skip this duplicate
+                    }
+                }
+                
+                messageMap.set(messageKey, msgTime);
+                lastDisplayedMessages.add(messageId);
+                filteredMessages.push(msg);
+            }
+            
+            recentMessages = filteredMessages;
+            
+            // Clean up old displayed message IDs (keep only last 100)
+            if (lastDisplayedMessages.size > 100) {
+                const messagesToKeep = Array.from(lastDisplayedMessages).slice(-50);
+                lastDisplayedMessages.clear();
+                messagesToKeep.forEach(id => lastDisplayedMessages.add(id));
             }
             
             for (const msg of recentMessages) {
