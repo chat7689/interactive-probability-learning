@@ -1984,6 +1984,41 @@ function updateFlappyScore() {
     document.getElementById('flappyCredits').textContent = flappyScore;
 }
 
+// Update game cards visual state based on enabled/disabled status
+function updateGameCards() {
+    const gameCards = document.querySelectorAll('.game-card');
+    const gameTypes = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'roulette', 'bingo'];
+    
+    gameCards.forEach((card, index) => {
+        if (index < gameTypes.length) {
+            const gameType = gameTypes[index];
+            const isEnabled = isGameEnabled(gameType);
+            
+            if (isEnabled) {
+                card.classList.remove('disabled');
+                const disabledOverlay = card.querySelector('.disabled-overlay');
+                if (disabledOverlay) {
+                    disabledOverlay.remove();
+                }
+                // Re-enable click
+                card.style.pointerEvents = '';
+            } else {
+                card.classList.add('disabled');
+                
+                // Add disabled overlay if it doesn't exist
+                if (!card.querySelector('.disabled-overlay')) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'disabled-overlay';
+                    overlay.innerHTML = '<span>DISABLED</span>';
+                    card.appendChild(overlay);
+                }
+                // Disable click
+                card.style.pointerEvents = 'none';
+            }
+        }
+    });
+}
+
 // Initialize games page
 document.addEventListener('DOMContentLoaded', async () => {
     if (!RainbetUtils.requireAuth()) return;
@@ -1998,6 +2033,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateUserPoints();
     updateLeaderboard();
     loadTaxSettings();
+    
+    // Wait a bit for game toggles to load, then update cards
+    setTimeout(updateGameCards, 500);
     
     // Update chat title properly with async call
     try {
