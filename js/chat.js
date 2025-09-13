@@ -844,6 +844,30 @@ function cancelAdminAction() {
 function openAdmin() {
     document.getElementById('adminModal').style.display = 'block';
     document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    
+    // Add event listeners to prevent background scrolling
+    const adminModal = document.getElementById('adminModal');
+    const modalContent = adminModal.querySelector('.modal-content');
+    
+    // Define event handlers
+    adminWheelHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Only scroll the modal content
+        const delta = e.deltaY;
+        modalContent.scrollTop += delta;
+    };
+    
+    adminTouchHandler = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+    
+    // Add event listeners
+    adminModal.addEventListener('wheel', adminWheelHandler);
+    adminModal.addEventListener('touchmove', adminTouchHandler);
+    
     loadUserPointsList();
     loadOnlineUsersList();
     loadGameToggles();
@@ -853,9 +877,19 @@ function openAdmin() {
 }
 
 function closeAdmin() {
-    document.getElementById('adminModal').style.display = 'none';
+    const adminModal = document.getElementById('adminModal');
+    
+    // Remove event listeners to prevent memory leaks
+    adminModal.removeEventListener('wheel', adminWheelHandler);
+    adminModal.removeEventListener('touchmove', adminTouchHandler);
+    
+    adminModal.style.display = 'none';
     document.body.style.overflow = 'auto'; // Restore background scrolling
 }
+
+// Store event handlers globally so they can be removed
+let adminWheelHandler = null;
+let adminTouchHandler = null;
 
 async function updateChatName() {
     const newName = document.getElementById('chatNameInput').value.trim();

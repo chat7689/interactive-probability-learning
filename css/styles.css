@@ -725,6 +725,12 @@ button:disabled {
     scrollbar-color: #3498db #f1f1f1;
     overscroll-behavior: contain;
     margin: 2vh auto;
+    scroll-behavior: smooth;
+}
+
+#adminModal {
+    overflow: hidden;
+    position: fixed;
 }
 
 /* Webkit scrollbar styling for admin modal */
