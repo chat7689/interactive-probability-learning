@@ -854,8 +854,8 @@ function openAdmin() {
         e.preventDefault();
         e.stopPropagation();
         
-        // Only scroll the modal content
-        const delta = e.deltaY;
+        // Only scroll the modal content - 2x sensitivity
+        const delta = e.deltaY * 2;
         modalContent.scrollTop += delta;
     };
     
@@ -874,6 +874,7 @@ function openAdmin() {
     loadGameMultipliers();
     initializeAdminCollapsible();
     refreshEconomicStats();
+    refreshQuickStats();
 }
 
 function closeAdmin() {
@@ -890,6 +891,66 @@ function closeAdmin() {
 // Store event handlers globally so they can be removed
 let adminWheelHandler = null;
 let adminTouchHandler = null;
+
+// Quick actions and navigation functions
+async function refreshQuickStats() {
+    try {
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const usersSnapshot = await window.firebaseGet(usersRef);
+        
+        if (usersSnapshot.exists()) {
+            const users = usersSnapshot.val();
+            let totalPoints = 0;
+            let activeUsers = 0;
+            let totalUsers = 0;
+            
+            Object.values(users).forEach(user => {
+                totalUsers++;
+                if (user.points) totalPoints += user.points;
+                if (user.lastActive && (Date.now() - user.lastActive) < 24 * 60 * 60 * 1000) {
+                    activeUsers++;
+                }
+            });
+            
+            document.getElementById('quickTotalUsers').textContent = totalUsers.toLocaleString();
+            document.getElementById('quickTotalPoints').textContent = totalPoints.toLocaleString();
+            document.getElementById('quickOnlineUsers').textContent = activeUsers;
+        }
+        
+        // Get daily stats
+        const statsRef = window.firebaseRef(window.firebaseDb, `dailyStats/${new Date().toISOString().split('T')[0]}`);
+        const statsSnapshot = await window.firebaseGet(statsRef);
+        
+        if (statsSnapshot.exists()) {
+            const stats = statsSnapshot.val();
+            document.getElementById('quickGamesToday').textContent = stats.gamesPlayed || 0;
+        } else {
+            document.getElementById('quickGamesToday').textContent = '0';
+        }
+    } catch (error) {
+        console.error('Error refreshing quick stats:', error);
+    }
+}
+
+function jumpToSection(sectionName) {
+    const sectionMap = {
+        'economy': 'economy-section',
+        'games': 'games-section', 
+        'users': 'users-section'
+    };
+    
+    const sectionId = sectionMap[sectionName];
+    if (sectionId) {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Expand section if it's collapsed
+            if (section.classList.contains('collapsed')) {
+                section.classList.remove('collapsed');
+            }
+        }
+    }
+}
 
 async function updateChatName() {
     const newName = document.getElementById('chatNameInput').value.trim();
@@ -935,23 +996,65 @@ async function givePointsToUser() {
 
 async function givePointsToAll() {
     try {
+        const pointAmount = parseInt(document.getElementById('massPointAmount').value) || 100;
         const usersRef = window.firebaseRef(window.firebaseDb, 'users');
         const snapshot = await window.firebaseGet(usersRef);
         
         if (snapshot.exists()) {
             const userdata = snapshot.val();
             for (const username in userdata) {
-                await RainbetUtils.awardPoints(100, username);
+                await RainbetUtils.awardPoints(pointAmount, username);
             }
         }
         
-        await RainbetUtils.addSystemMessage('Admin gave 100 points to all users!');
+        await RainbetUtils.addSystemMessage(`Admin gave ${pointAmount} points to all users!`);
+        logSecurityEvent('MASS_POINTS_GIVEN', RainbetUtils.getCurrentUser(), `Gave ${pointAmount} points to all users`);
         await updateLeaderboard();
         await loadUserPointsList();
-        alert('Points given to all users!');
+        alert(`${pointAmount} points given to all users!`);
     } catch (error) {
         console.error('Error giving points to all:', error);
         alert('Error giving points to all users');
+    }
+}
+
+async function setAllUsersPoints() {
+    try {
+        const setPointsValue = parseInt(document.getElementById('setPointsValue').value);
+        if (isNaN(setPointsValue) || setPointsValue < 0) {
+            alert('Please enter a valid points value (0 or greater)');
+            return;
+        }
+        
+        const confirmation = confirm(`Are you sure you want to set ALL users' points to ${setPointsValue}? This cannot be undone.`);
+        if (!confirmation) return;
+        
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const snapshot = await window.firebaseGet(usersRef);
+        
+        if (snapshot.exists()) {
+            const userdata = snapshot.val();
+            let userCount = 0;
+            for (const username in userdata) {
+                const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
+                await window.firebaseSet(userRef, {
+                    ...userdata[username],
+                    points: setPointsValue
+                });
+                userCount++;
+            }
+            
+            await RainbetUtils.addSystemMessage(`Admin set all ${userCount} users' points to ${setPointsValue}!`);
+            logSecurityEvent('ALL_POINTS_SET', RainbetUtils.getCurrentUser(), `Set all users to ${setPointsValue} points`);
+            await updateLeaderboard();
+            await loadUserPointsList();
+            alert(`All users' points have been set to ${setPointsValue}!`);
+        } else {
+            alert('No users found in database');
+        }
+    } catch (error) {
+        console.error('Error setting all users points:', error);
+        alert('Error setting all users points');
     }
 }
 

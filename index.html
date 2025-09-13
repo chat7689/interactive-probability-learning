@@ -148,6 +148,36 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 <button class="close-btn" onclick="closeAdmin()">Close</button>
             </div>
             
+            <div class="admin-section">
+                <h3>📋 Quick Actions</h3>
+                <div class="admin-content">
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <h5>Total Users</h5>
+                            <div class="stat-value" id="quickTotalUsers">Loading...</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <h5>Online Now</h5>
+                            <div class="stat-value" id="quickOnlineUsers">Loading...</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <h5>Total Points</h5>
+                            <div class="stat-value" id="quickTotalPoints">Loading...</div>
+                        </div>
+                        <div class="admin-stat-card">
+                            <h5>Games Today</h5>
+                            <div class="stat-value" id="quickGamesToday">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="button-group" style="margin-top: 15px;">
+                        <button onclick="refreshQuickStats()" style="background: #3498db;">🔄 Refresh Stats</button>
+                        <button onclick="jumpToSection('economy')" style="background: #f39c12;">💰 Economy</button>
+                        <button onclick="jumpToSection('games')" style="background: #9b59b6;">🎮 Games</button>
+                        <button onclick="jumpToSection('users')" style="background: #27ae60;">👥 Users</button>
+                    </div>
+                </div>
+            </div>
+            
             <div class="admin-section collapsible">
                 <h3>🎛️ Basic Controls</h3>
                 <div class="admin-content">
@@ -170,11 +200,11 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 </div>
             </div>
             
-            <div class="admin-section collapsible">
+            <div class="admin-section collapsible" id="users-section">
                 <h3>👥 User Management</h3>
                 <div class="admin-content">
                     <div class="admin-group">
-                        <h4>💰 Points Management</h4>
+                        <h4>💰 Individual Points Management</h4>
                         <div class="control-grid">
                             <div>
                                 <div class="form-group">
@@ -188,8 +218,27 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                             </div>
                         </div>
                         <div class="button-group">
-                            <button onclick="givePointsToUser()">Give Points</button>
-                            <button onclick="givePointsToAll()" style="background: #f39c12;">Give 100 Points to All</button>
+                            <button onclick="givePointsToUser()">Give Points to User</button>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-group">
+                        <h4>🎯 Mass Points Management</h4>
+                        <div class="control-grid">
+                            <div>
+                                <div class="form-group">
+                                    <label>Points Amount (for all users):</label>
+                                    <input type="number" id="massPointAmount" placeholder="Enter amount" min="0" value="100">
+                                </div>
+                                <div class="form-group">
+                                    <label>Set Points Value (for all users):</label>
+                                    <input type="number" id="setPointsValue" placeholder="Set everyone to this amount" min="0" value="500">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button onclick="givePointsToAll()" style="background: #f39c12;">Give Points to Everyone</button>
+                            <button onclick="setAllUsersPoints()" style="background: #9b59b6;">Set Everyone's Points</button>
                         </div>
                     </div>
                     
@@ -215,7 +264,7 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 </div>
             </div>
             
-            <div class="admin-section collapsible">
+            <div class="admin-section collapsible" id="games-section">
                 <h3>🎮 Games Management</h3>
                 <div class="admin-content">
                     <div class="admin-group">
@@ -269,7 +318,7 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 </div>
             </div>
             
-            <div class="admin-section">
+            <div class="admin-section" id="economy-section">
                 <h3>🏦 Economy Controls</h3>
                 
                 <div style="margin-bottom: 15px;">
