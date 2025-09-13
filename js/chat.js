@@ -720,7 +720,7 @@ async function sendMessage() {
         await window.firebasePush(messagesRef, {
             username: RainbetUtils.getCurrentUser(),
             message: message,
-            timestamp: window.firebaseServerTimestamp()
+            timestamp: Date.now() // Use regular timestamp instead of Firebase server timestamp
         });
         console.log('Message sent successfully to Firebase');
         console.log(`=== SEND MESSAGE END ${Date.now()} ===`);
@@ -834,15 +834,7 @@ async function displayMessages() {
                 
                 // Format timestamp
                 console.log('Message timestamp:', msg.timestamp, typeof msg.timestamp);
-                let timestamp;
-                if (msg.timestamp && typeof msg.timestamp === 'object' && msg.timestamp.seconds) {
-                    timestamp = msg.timestamp.seconds * 1000;
-                } else if (msg.timestamp && typeof msg.timestamp === 'number') {
-                    timestamp = msg.timestamp;
-                } else {
-                    timestamp = Date.now();
-                }
-                console.log('Processed timestamp:', timestamp);
+                const timestamp = msg.timestamp || Date.now();
                 const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
                 console.log('Time string:', timeStr);
                 
