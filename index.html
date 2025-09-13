@@ -92,7 +92,7 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 <div class="messages" id="messages"></div>
                 <div class="input-area">
                     <textarea id="messageInput" class="message-input" placeholder="Type a message... Try /games, /shop, or /admin"></textarea>
-                    <button onclick="sendMessage()">Send</button>
+                    <button onclick="console.log('Button clicked'); if(typeof sendMessage === 'function') { sendMessage(); } else { console.error('sendMessage function not found'); }">Send</button>
                 </div>
             </div>
         </div>

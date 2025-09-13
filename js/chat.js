@@ -2268,8 +2268,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         console.log('Initialization complete');
         
+        // Test if sendMessage function is available
+        console.log('sendMessage function exists:', typeof sendMessage === 'function');
+        
     } catch (error) {
         console.error('Critical error in DOMContentLoaded:', error);
         // Don't let initialization errors break the whole page
     }
 });
+
+// Make sure sendMessage is available globally
+console.log('chat.js loaded, sendMessage defined:', typeof sendMessage === 'function');
