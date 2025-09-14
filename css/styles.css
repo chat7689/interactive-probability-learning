@@ -107,7 +107,7 @@ body {
 
 .settings-btn { left: 15px; }
 .info-btn { right: 150px; }
-.shop-btn { right: 105px; }
+.shop-btn { right: 45px; }
 .games-btn { right: 15px; }
 
 .settings-btn:hover, .shop-btn:hover, .games-btn:hover, .info-btn:hover {
@@ -128,14 +128,8 @@ body {
     box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
 }
 
-.connection-status { 
-    position: absolute; 
-    top: 15px; 
-    right: 105px; 
-    width: 8px; 
-    height: 8px; 
-    border-radius: 50%; 
-    background: #2ecc71; 
+.connection-status {
+    display: none;
 }
 
 .auth-screen { padding: 30px; }

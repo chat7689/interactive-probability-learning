@@ -1843,7 +1843,7 @@ async function loadCurrentGameToggles() {
         const toggles = snapshot.exists() ? snapshot.val() : {};
         
         // Update checkboxes with current states
-        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'].forEach(game => {
+        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'].forEach(game => {
             const checkbox = document.getElementById(`toggle_${game}`);
             if (checkbox) {
                 checkbox.checked = toggles[game] !== false; // Default to true if not specified
@@ -1857,7 +1857,7 @@ async function loadCurrentGameToggles() {
 async function updateAllGameToggles() {
     try {
         const toggles = {};
-        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'].forEach(game => {
+        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'].forEach(game => {
             const checkbox = document.getElementById(`toggle_${game}`);
             if (checkbox) toggles[game] = checkbox.checked;
         });
@@ -1883,7 +1883,7 @@ async function setGlobalMultiplier() {
     }
     
     try {
-        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'];
+        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'];
         const multipliers = {};
         
         games.forEach(game => {
@@ -1907,7 +1907,7 @@ async function setGlobalMultiplier() {
 async function updateIndividualMultipliers() {
     try {
         const multipliers = {};
-        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash'];
+        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'];
         
         games.forEach(game => {
             const input = document.getElementById(`mult_${game}`);

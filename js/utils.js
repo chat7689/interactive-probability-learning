@@ -116,7 +116,11 @@ class RainbetUtils {
         console.log(`Checking effects for ${username}:`, userData.items);
 
         shopItems.forEach(item => {
-            for (let tier = 1; tier <= 3; tier++) {
+            let hasActiveEffect = false;
+            let expiredTier = null;
+
+            // Check all tiers to find highest active tier or highest expired tier
+            for (let tier = 3; tier >= 1; tier--) {
                 const itemKey = `${item.id}_${tier}`;
                 const purchaseTime = userData.items[itemKey];
                 if (purchaseTime) {
@@ -127,8 +131,38 @@ class RainbetUtils {
                     if (timeElapsed < duration) {
                         activeEffects.push({ id: item.id, tier });
                         console.log(`Active effect: ${item.id} tier ${tier}`);
-                        break; // Only add the highest active tier
+                        hasActiveEffect = true;
+                        break; // Found active tier, use it
+                    } else if (!expiredTier) {
+                        expiredTier = tier; // Track highest expired tier
                     }
+                }
+            }
+
+            // If no active effect but had expired tiers, reset to tier 1
+            if (!hasActiveEffect && expiredTier) {
+                activeEffects.push({ id: item.id, tier: 1 });
+                console.log(`Expired effect ${item.id} tier ${expiredTier} reset to tier 1`);
+
+                // Update storage to reflect tier 1 reset
+                const tier1Key = `${item.id}_1`;
+                userData.items[tier1Key] = now; // Set tier 1 as active now
+
+                // Remove expired higher tier entries
+                for (let t = 2; t <= 3; t++) {
+                    const expiredKey = `${item.id}_${t}`;
+                    if (userData.items[expiredKey]) {
+                        delete userData.items[expiredKey];
+                    }
+                }
+
+                // Save updated data back to storage
+                try {
+                    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
+                    userdata[username] = userData;
+                    localStorage.setItem('chat_userdata', JSON.stringify(userdata));
+                } catch (error) {
+                    console.log('Failed to save tier reset to localStorage:', error);
                 }
             }
         });

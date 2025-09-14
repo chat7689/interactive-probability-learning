@@ -282,8 +282,17 @@ async function showGame(gameType) {
     document.getElementById('gameArea').style.display = 'block';
     document.getElementById('gameResult').innerHTML = '';
     
-    // SECURITY: Enable bet input when starting new game
-    document.getElementById('betAmount').disabled = false;
+    // SECURITY: Enable bet input when starting new game (except for flappy bird)
+    const betContainer = document.querySelector('.bet-container');
+    if (gameType === 'flappybird') {
+        // Hide betting interface for flappy bird - it's free to play
+        if (betContainer) betContainer.style.display = 'none';
+        document.getElementById('betAmount').disabled = true;
+    } else {
+        // Show betting interface for other games
+        if (betContainer) betContainer.style.display = 'block';
+        document.getElementById('betAmount').disabled = false;
+    }
     
     // Update points display in game interface
     await updateUserPoints();
@@ -1855,8 +1864,8 @@ function setupFlappyBird(container) {
         width: 20,
         height: 20,
         velocity: 0,
-        gravity: 0.6,
-        jump: -10
+        gravity: 0.4,
+        jump: -8
     };
     
     // Initialize pipes
@@ -1965,7 +1974,7 @@ function flappyGameLoop() {
     // Update pipes
     for (let i = flappyPipes.length - 1; i >= 0; i--) {
         const pipe = flappyPipes[i];
-        pipe.x -= 3;
+        pipe.x -= 2;
         
         // Check if bird passed pipe
         if (!pipe.passed && pipe.x + 50 < flappyBird.x) {
