@@ -283,14 +283,14 @@ async function showGame(gameType) {
     document.getElementById('gameResult').innerHTML = '';
     
     // SECURITY: Enable bet input when starting new game (except for flappy bird)
-    const betContainer = document.querySelector('.bet-container');
+    const betControls = document.querySelector('.bet-controls');
     if (gameType === 'flappybird') {
         // Hide betting interface for flappy bird - it's free to play
-        if (betContainer) betContainer.style.display = 'none';
+        if (betControls) betControls.style.display = 'none';
         document.getElementById('betAmount').disabled = true;
     } else {
         // Show betting interface for other games
-        if (betContainer) betContainer.style.display = 'block';
+        if (betControls) betControls.style.display = 'flex';
         document.getElementById('betAmount').disabled = false;
     }
     
@@ -1864,8 +1864,8 @@ function setupFlappyBird(container) {
         width: 20,
         height: 20,
         velocity: 0,
-        gravity: 0.4,
-        jump: -8
+        gravity: 0.3,
+        jump: -7
     };
     
     // Initialize pipes
@@ -1961,7 +1961,7 @@ function flappyGameLoop() {
     // Add new pipes
     if (flappyPipes.length === 0 || flappyPipes[flappyPipes.length - 1].x < flappyCanvas.width - 200) {
         const gapY = 100 + Math.random() * 200;
-        const gapSize = 120;
+        const gapSize = 180;
         flappyPipes.push({
             x: flappyCanvas.width,
             topHeight: gapY,
@@ -1974,7 +1974,7 @@ function flappyGameLoop() {
     // Update pipes
     for (let i = flappyPipes.length - 1; i >= 0; i--) {
         const pipe = flappyPipes[i];
-        pipe.x -= 2;
+        pipe.x -= 1.5;
         
         // Check if bird passed pipe
         if (!pipe.passed && pipe.x + 50 < flappyBird.x) {
