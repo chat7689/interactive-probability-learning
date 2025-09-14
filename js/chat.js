@@ -863,6 +863,12 @@ async function displayMessages(forceRefresh = false) {
                     <span class="message-time">${timeStr}</span>
                 </div>
                 <div class="message-content">${RainbetUtils.escapeHtml(msg.message)}</div>`;
+
+                // Apply shop effects to the message
+                if (!msg.isSystem) {
+                    RainbetUtils.applyMessageEffects(messageDiv, msg.username);
+                }
+
                 messagesDiv.appendChild(messageDiv);
             }
             

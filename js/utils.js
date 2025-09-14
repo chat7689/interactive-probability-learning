@@ -77,6 +77,81 @@ class RainbetUtils {
         return div.innerHTML;
     }
 
+    // Shop Effects System
+    static getUserActiveEffects(username) {
+        const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
+        const userData = userdata[username];
+        if (!userData || !userData.items) return [];
+
+        const now = Date.now();
+        const activeEffects = [];
+        const shopItems = [
+            { id: 'large_text', durations: [60*60*1000, 2*60*60*1000, 3*60*60*1000] },
+            { id: 'bold_text', durations: [60*60*1000, 2*60*60*1000, 3*60*60*1000] },
+            { id: 'highlight_text', durations: [60*60*1000, 2*60*60*1000, 3*60*60*1000] },
+            { id: 'glow_effect', durations: [30*60*1000, 60*60*1000, 90*60*1000] },
+            { id: 'electric_border', durations: [20*60*1000, 40*60*1000, 60*60*1000] },
+            { id: 'vip_badge', durations: [6*60*60*1000, 12*60*60*1000, 24*60*60*1000] }
+        ];
+
+        shopItems.forEach(item => {
+            for (let tier = 1; tier <= 3; tier++) {
+                const itemKey = `${item.id}_${tier}`;
+                const purchaseTime = userData.items[itemKey];
+                if (purchaseTime && purchaseTime > (now - item.durations[tier - 1])) {
+                    activeEffects.push({ id: item.id, tier });
+                    break; // Only add the highest active tier
+                }
+            }
+        });
+
+        return activeEffects;
+    }
+
+    static applyMessageEffects(messageDiv, username) {
+        const effects = this.getUserActiveEffects(username);
+        const messageContent = messageDiv.querySelector('.message-content');
+        const messageUser = messageDiv.querySelector('.message-user');
+
+        if (!messageContent) return;
+
+        let extraClasses = [];
+        let userBadge = '';
+
+        effects.forEach(effect => {
+            switch (effect.id) {
+                case 'large_text':
+                    extraClasses.push(`large-text-tier-${effect.tier}`);
+                    break;
+                case 'bold_text':
+                    extraClasses.push(`bold-text-tier-${effect.tier}`);
+                    break;
+                case 'highlight_text':
+                    extraClasses.push(`highlight-text-tier-${effect.tier}`);
+                    break;
+                case 'glow_effect':
+                    extraClasses.push(`glow-effect-tier-${effect.tier}`);
+                    break;
+                case 'electric_border':
+                    extraClasses.push(`electric-border-tier-${effect.tier}`);
+                    break;
+                case 'vip_badge':
+                    userBadge = `<span class="vip-badge-tier-${effect.tier}">👑</span> `;
+                    break;
+            }
+        });
+
+        // Apply classes to message content
+        if (extraClasses.length > 0) {
+            messageContent.className += ' ' + extraClasses.join(' ');
+        }
+
+        // Add VIP badge to username
+        if (userBadge && messageUser) {
+            messageUser.innerHTML = userBadge + messageUser.innerHTML;
+        }
+    }
+
     static showMessage(text, isError = false, elementId = 'message') {
         const messageDiv = document.getElementById(elementId);
         if (messageDiv) {
