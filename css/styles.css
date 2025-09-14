@@ -89,7 +89,7 @@ body {
     position: relative; 
 }
 
-.settings-btn, .shop-btn, .games-btn { 
+.settings-btn, .shop-btn, .games-btn, .info-btn { 
     position: absolute; 
     top: 15px; 
     background: rgba(255,255,255,0.1); 
@@ -106,10 +106,11 @@ body {
 }
 
 .settings-btn { left: 15px; }
-.shop-btn { right: 60px; }
+.shop-btn { right: 105px; }
+.info-btn { right: 60px; }
 .games-btn { right: 15px; }
 
-.settings-btn:hover, .shop-btn:hover, .games-btn:hover { 
+.settings-btn:hover, .shop-btn:hover, .games-btn:hover, .info-btn:hover { 
     background: rgba(255,255,255,0.2); 
 }
 

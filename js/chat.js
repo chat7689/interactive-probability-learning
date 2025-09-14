@@ -811,6 +811,7 @@ async function displayMessages(forceRefresh = false) {
     if (forceRefresh) {
         messagesDiv.innerHTML = '';
         displayedMessageIds.clear();
+        seenMessages.clear(); // Also clear duplicate detection for fresh start
     }
     
     // Force scroll to stay at bottom during rebuild to prevent jumping
@@ -879,17 +880,27 @@ async function displayMessages(forceRefresh = false) {
                 }
 
                 const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
-                const msgKey = `${msg.username}-${msg.message}`;
 
-                // Skip duplicates within 2 seconds
-                if (seenMessages.has(msgKey)) {
-                    const lastTime = seenMessages.get(msgKey);
-                    if (Math.abs(msgTime - lastTime) < 2000) {
-                        console.log(`Skipping duplicate: ${msgKey}`);
+                // Use message ID as primary duplicate check, fallback to content+time for older messages
+                if (msg.id) {
+                    // Modern messages have IDs - this is the most reliable check
+                    if (seenMessages.has(msg.id)) {
+                        console.log(`Skipping duplicate by ID: ${msg.id}`);
                         continue;
                     }
+                    seenMessages.set(msg.id, msgTime);
+                } else {
+                    // Fallback for messages without IDs - use content+user+time
+                    const msgKey = `${msg.username}-${msg.message}`;
+                    if (seenMessages.has(msgKey)) {
+                        const lastTime = seenMessages.get(msgKey);
+                        if (Math.abs(msgTime - lastTime) < 2000) {
+                            console.log(`Skipping duplicate by content: ${msgKey}`);
+                            continue;
+                        }
+                    }
+                    seenMessages.set(msgKey, msgTime);
                 }
-                seenMessages.set(msgKey, msgTime);
 
                 displayedMessageIds.add(msg.id);
                 displayedCount++;
