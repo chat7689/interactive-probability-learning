@@ -1108,22 +1108,26 @@ async function showGameResult(won, betAmount, multiplier, message) {
         const rawWinnings = Math.floor(betAmount * multiplier);
         const taxedWinnings = applyTax(rawWinnings);
         const taxAmount = rawWinnings - taxedWinnings;
-        
+
+        // Calculate net profit (what they actually won above their bet)
+        const netProfit = taxedWinnings - betAmount;
+        const grossProfit = rawWinnings - betAmount;
+
         RainbetUtils.awardPoints(taxedWinnings);
-        
+
         if (taxAmount > 0) {
             const taxBreakdown = getTaxBreakdown(rawWinnings);
             const effectiveRate = ((taxAmount / rawWinnings) * 100).toFixed(1);
-            pointsText = `You won ${rawWinnings} points! (${taxedWinnings} after ${taxAmount} progressive tax @ ${effectiveRate}%)`;
+            pointsText = `You won ${grossProfit} points! (${netProfit} after ${taxAmount} tax @ ${effectiveRate}%)`;
         } else {
-            pointsText = 'You won ' + taxedWinnings + ' points!';
+            pointsText = 'You won ' + netProfit + ' points!';
         }
-        
+
         await updateUserPoints();
         await updateLeaderboard();
-        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${taxedWinnings} points playing ${currentGame}!`);
+        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${netProfit} points playing ${currentGame}!`);
     } else {
-        pointsText = 'You lost ' + betAmount + ' points.';
+        pointsText = `You lost your bet: ${betAmount} points`;
         RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} lost ${betAmount} points playing ${currentGame}.`);
     }
     
