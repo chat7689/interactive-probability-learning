@@ -946,13 +946,13 @@ button:disabled {
 
 /* Glow Effects */
 .glow-effect-tier-1 {
-    text-shadow: 0 0 5px rgba(52, 152, 219, 0.8);
-    color: #3498db;
+    text-shadow: 0 0 5px rgba(46, 204, 113, 0.8);
+    color: #2ecc71;
 }
 
 .glow-effect-tier-2 {
-    text-shadow: 0 0 8px rgba(155, 89, 182, 0.9), 0 0 15px rgba(155, 89, 182, 0.5);
-    color: #9b59b6;
+    text-shadow: 0 0 8px rgba(230, 126, 34, 0.9), 0 0 15px rgba(230, 126, 34, 0.5);
+    color: #e67e22;
     font-weight: 500;
 }
 

@@ -134,14 +134,25 @@ async function register() {
         RainbetUtils.showMessage('Username must be at least 3 characters', true);
         return;
     }
-    
-    // Check for emojis in username
-    const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u;
+
+    if (username.length > 15) {
+        RainbetUtils.showMessage('Username must be 15 characters or less', true);
+        return;
+    }
+
+    // Check for spaces in username
+    if (username.includes(' ')) {
+        RainbetUtils.showMessage('Username cannot contain spaces', true);
+        return;
+    }
+
+    // Check for emojis in username (expanded emoji regex)
+    const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA70}-\u{1FAFF}]|[\u{1F004}]|[\u{1F0CF}]|[\u{1F170}-\u{1F251}]/u;
     if (emojiRegex.test(username)) {
         RainbetUtils.showMessage('Username cannot contain emojis', true);
         return;
     }
-    
+
     // Check for parentheses in username
     if (username.includes('(') || username.includes(')')) {
         RainbetUtils.showMessage('Username cannot contain parentheses ( )', true);
@@ -213,6 +224,34 @@ async function login() {
     if (!username || !password) {
         console.log('Missing username or password');
         RainbetUtils.showMessage('Please enter username and password', true);
+        return;
+    }
+
+    // Validate username format (same as registration)
+    if (username.length < 3) {
+        RainbetUtils.showMessage('Username must be at least 3 characters', true);
+        return;
+    }
+
+    if (username.length > 15) {
+        RainbetUtils.showMessage('Username must be 15 characters or less', true);
+        return;
+    }
+
+    if (username.includes(' ')) {
+        RainbetUtils.showMessage('Username cannot contain spaces', true);
+        return;
+    }
+
+    // Check for emojis in username
+    const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA70}-\u{1FAFF}]|[\u{1F004}]|[\u{1F0CF}]|[\u{1F170}-\u{1F251}]/u;
+    if (emojiRegex.test(username)) {
+        RainbetUtils.showMessage('Username cannot contain emojis', true);
+        return;
+    }
+
+    if (username.includes('(') || username.includes(')')) {
+        RainbetUtils.showMessage('Username cannot contain parentheses ( )', true);
         return;
     }
     
@@ -866,7 +905,7 @@ async function displayMessages(forceRefresh = false) {
 
                 // Apply shop effects to the message
                 if (!msg.isSystem) {
-                    RainbetUtils.applyMessageEffects(messageDiv, msg.username);
+                    await RainbetUtils.applyMessageEffects(messageDiv, msg.username);
                 }
 
                 messagesDiv.appendChild(messageDiv);

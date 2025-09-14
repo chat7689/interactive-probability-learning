@@ -139,14 +139,32 @@ async function buyItemTier(itemId) {
     // Set new tier and activate item
     setUserItemTier(itemId, nextTier);
     const duration = item.durations[nextTier - 1];
-    await RainbetUtils.purchaseItem(itemId + '_' + nextTier, 0); // Activate the item
-    
-    // Add duration to existing active item if it exists
+
+    // Store item activation in both localStorage and Firebase
     const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
     const userData = userdata[currentUser] || { points: 0, items: {}, itemTiers: {}, lastDaily: 0 };
     userData.items[itemId + '_' + nextTier] = Date.now();
     userdata[currentUser] = userData;
     localStorage.setItem('chat_userdata', JSON.stringify(userdata));
+
+    // Also store in Firebase for consistency
+    try {
+        if (window.firebaseDb) {
+            const userRef = window.firebaseRef(window.firebaseDb, `users/${currentUser}`);
+            const snapshot = await window.firebaseGet(userRef);
+            let firebaseUserData = { points: 0, items: {}, lastDaily: 0 };
+
+            if (snapshot.exists()) {
+                firebaseUserData = snapshot.val();
+            }
+
+            if (!firebaseUserData.items) firebaseUserData.items = {};
+            firebaseUserData.items[itemId + '_' + nextTier] = Date.now();
+            await window.firebaseSet(userRef, firebaseUserData);
+        }
+    } catch (error) {
+        console.log('Firebase storage failed, using localStorage only');
+    }
     
     alert(`${item.baseName} upgraded to Tier ${nextTier}!`);
     await updateUserPoints();

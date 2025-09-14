@@ -78,9 +78,28 @@ class RainbetUtils {
     }
 
     // Shop Effects System
-    static getUserActiveEffects(username) {
-        const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
-        const userData = userdata[username];
+    static async getUserActiveEffects(username) {
+        let userData = null;
+
+        // Try to get from Firebase first
+        try {
+            if (window.firebaseDb) {
+                const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
+                const snapshot = await window.firebaseGet(userRef);
+                if (snapshot.exists()) {
+                    userData = snapshot.val();
+                }
+            }
+        } catch (error) {
+            console.log('Firebase not available, using localStorage');
+        }
+
+        // Fallback to localStorage
+        if (!userData) {
+            const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
+            userData = userdata[username];
+        }
+
         if (!userData || !userData.items) return [];
 
         const now = Date.now();
@@ -94,31 +113,85 @@ class RainbetUtils {
             { id: 'vip_badge', durations: [6*60*60*1000, 12*60*60*1000, 24*60*60*1000] }
         ];
 
+        console.log(`Checking effects for ${username}:`, userData.items);
+
         shopItems.forEach(item => {
             for (let tier = 1; tier <= 3; tier++) {
                 const itemKey = `${item.id}_${tier}`;
                 const purchaseTime = userData.items[itemKey];
-                if (purchaseTime && purchaseTime > (now - item.durations[tier - 1])) {
-                    activeEffects.push({ id: item.id, tier });
-                    break; // Only add the highest active tier
+                if (purchaseTime) {
+                    const timeElapsed = now - purchaseTime;
+                    const duration = item.durations[tier - 1];
+                    console.log(`Item ${itemKey}: purchased ${timeElapsed}ms ago, duration ${duration}ms`);
+
+                    if (timeElapsed < duration) {
+                        activeEffects.push({ id: item.id, tier });
+                        console.log(`Active effect: ${item.id} tier ${tier}`);
+                        break; // Only add the highest active tier
+                    }
                 }
             }
         });
 
+        console.log(`Active effects for ${username}:`, activeEffects);
         return activeEffects;
     }
 
-    static applyMessageEffects(messageDiv, username) {
-        const effects = this.getUserActiveEffects(username);
+    // Temporary testing function - give user an effect for testing
+    static async giveTestEffect(username, effectId, tier = 1) {
+        console.log(`*** GIVING TEST EFFECT: ${effectId} tier ${tier} to ${username} ***`);
+
+        // Store in localStorage
+        const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
+        if (!userdata[username]) {
+            userdata[username] = { points: 1000, items: {}, itemTiers: {}, lastDaily: 0 };
+        }
+        const itemKey = `${effectId}_${tier}`;
+        userdata[username].items[itemKey] = Date.now();
+        localStorage.setItem('chat_userdata', JSON.stringify(userdata));
+        console.log(`Stored in localStorage: ${itemKey} = ${userdata[username].items[itemKey]}`);
+
+        // Also store in Firebase if available
+        try {
+            if (window.firebaseDb) {
+                const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
+                let firebaseUserData = { points: 1000, items: {}, lastDaily: 0 };
+
+                const snapshot = await window.firebaseGet(userRef);
+                if (snapshot.exists()) {
+                    firebaseUserData = snapshot.val();
+                }
+
+                firebaseUserData.items[itemKey] = Date.now();
+                await window.firebaseSet(userRef, firebaseUserData);
+                console.log(`Also stored in Firebase: ${itemKey}`);
+            }
+        } catch (error) {
+            console.log('Firebase not available, localStorage only');
+        }
+
+        console.log(`Test effect applied! Try sending a message as ${username} to see the effect.`);
+    }
+
+    static async applyMessageEffects(messageDiv, username) {
+        console.log(`*** APPLYING EFFECTS TO MESSAGE FROM: ${username} ***`);
+
+        const effects = await this.getUserActiveEffects(username);
+        console.log(`Found ${effects.length} active effects:`, effects);
+
         const messageContent = messageDiv.querySelector('.message-content');
         const messageUser = messageDiv.querySelector('.message-user');
 
-        if (!messageContent) return;
+        if (!messageContent) {
+            console.log('No .message-content found in messageDiv');
+            return;
+        }
 
         let extraClasses = [];
         let userBadge = '';
 
         effects.forEach(effect => {
+            console.log(`Processing effect: ${effect.id} tier ${effect.tier}`);
             switch (effect.id) {
                 case 'large_text':
                     extraClasses.push(`large-text-tier-${effect.tier}`);
@@ -141,9 +214,13 @@ class RainbetUtils {
             }
         });
 
+        console.log(`Classes to add: [${extraClasses.join(', ')}]`);
+
         // Apply classes to message content
         if (extraClasses.length > 0) {
+            const oldClassName = messageContent.className;
             messageContent.className += ' ' + extraClasses.join(' ');
+            console.log(`Updated message content classes from '${oldClassName}' to '${messageContent.className}'`);
         }
 
         // Add VIP badge to username
@@ -212,19 +289,28 @@ class RainbetUtils {
 
     static async deductPoints(amount, username = null) {
         const user = username || this.getCurrentUser();
+
+        // Handle free items (0 cost)
+        if (amount === 0) {
+            return true;
+        }
+
         try {
             const userRef = window.firebaseRef(window.firebaseDb, `users/${user}`);
             const snapshot = await window.firebaseGet(userRef);
-            
-            if (!snapshot.exists()) {
+
+            let userData;
+            if (snapshot.exists()) {
+                userData = snapshot.val();
+            } else {
+                // Create new user data if doesn't exist
+                userData = { points: 0, items: {}, lastDaily: 0 };
+            }
+
+            if (userData.points < amount) {
                 return false;
             }
-            
-            const userData = snapshot.val();
-            if (!userData || userData.points < amount) {
-                return false;
-            }
-            
+
             userData.points -= amount;
             await window.firebaseSet(userRef, userData);
             return true;
@@ -232,12 +318,17 @@ class RainbetUtils {
             console.error('Error deducting points:', error);
             // Fallback to localStorage
             const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
-            const userData = userdata[user];
-            
-            if (!userData || userData.points < amount) {
+            let userData = userdata[user];
+
+            if (!userData) {
+                userData = { points: 0, items: {}, itemTiers: {}, lastDaily: 0 };
+                userdata[user] = userData;
+            }
+
+            if (userData.points < amount) {
                 return false;
             }
-            
+
             userData.points -= amount;
             userdata[user] = userData;
             localStorage.setItem('chat_userdata', JSON.stringify(userdata));
@@ -545,3 +636,22 @@ class RainbetUtils {
 document.addEventListener('DOMContentLoaded', () => {
     RainbetUtils.initPage();
 });
+
+// Global test function for browser console
+window.testShopEffect = async function(effectId = 'large_text', tier = 1) {
+    const currentUser = RainbetUtils.getCurrentUser();
+    if (!currentUser) {
+        console.log('No user logged in! Please log in first.');
+        return;
+    }
+    await RainbetUtils.giveTestEffect(currentUser, effectId, tier);
+    console.log('Test effect applied! Available effects:');
+    console.log('- large_text (tiers 1-3)');
+    console.log('- bold_text (tiers 1-3)');
+    console.log('- highlight_text (tiers 1-3)');
+    console.log('- glow_effect (tiers 1-3)');
+    console.log('- electric_border (tiers 1-3)');
+    console.log('- vip_badge (tiers 1-3)');
+    console.log('');
+    console.log('Usage: testShopEffect("glow_effect", 2)');
+};
