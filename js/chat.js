@@ -793,6 +793,9 @@ async function sendMessage() {
     }
 }
 
+// Persistent duplicate message tracking
+const seenMessages = new Map();
+
 async function displayMessages(forceRefresh = false) {
     const callTime = Date.now();
     console.log(`*** DISPLAY MESSAGES CALLED at ${callTime} (forceRefresh: ${forceRefresh}) ***`);
@@ -850,7 +853,17 @@ async function displayMessages(forceRefresh = false) {
             console.log(`Processing ${messagesToProcess.length} messages (${forceRefresh ? 'full refresh' : 'new only'})`);
 
             // Simple duplicate prevention - track by content and user within 2 seconds
-            const seenMessages = new Map();
+            // (seenMessages is now persistent, declared outside function)
+
+            // Clean up old entries (older than 5 minutes to prevent memory bloat)
+            const now = Date.now();
+            const fiveMinutesAgo = now - (5 * 60 * 1000);
+            for (const [key, timestamp] of seenMessages.entries()) {
+                if (timestamp < fiveMinutesAgo) {
+                    seenMessages.delete(key);
+                }
+            }
+
             let displayedCount = 0;
 
             for (const msg of messagesToProcess) {
