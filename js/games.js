@@ -1864,8 +1864,8 @@ function setupFlappyBird(container) {
         width: 20,
         height: 20,
         velocity: 0,
-        gravity: 0.3,
-        jump: -7
+        gravity: 0.15,
+        jump: -5
     };
     
     // Initialize pipes
@@ -1959,9 +1959,9 @@ function flappyGameLoop() {
     }
     
     // Add new pipes
-    if (flappyPipes.length === 0 || flappyPipes[flappyPipes.length - 1].x < flappyCanvas.width - 200) {
+    if (flappyPipes.length === 0 || flappyPipes[flappyPipes.length - 1].x < flappyCanvas.width - 300) {
         const gapY = 100 + Math.random() * 200;
-        const gapSize = 180;
+        const gapSize = 280;
         flappyPipes.push({
             x: flappyCanvas.width,
             topHeight: gapY,
@@ -1974,7 +1974,7 @@ function flappyGameLoop() {
     // Update pipes
     for (let i = flappyPipes.length - 1; i >= 0; i--) {
         const pipe = flappyPipes[i];
-        pipe.x -= 1.5;
+        pipe.x -= 0.8;
         
         // Check if bird passed pipe
         if (!pipe.passed && pipe.x + 50 < flappyBird.x) {
