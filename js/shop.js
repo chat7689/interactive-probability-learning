@@ -169,7 +169,7 @@ async function buyItemTier(itemId) {
     alert(`${item.baseName} upgraded to Tier ${nextTier}!`);
     await updateUserPoints();
     await updateLeaderboard();
-    checkActiveItems();
+    await checkActiveItems();
 }
 
 async function extendItem(itemId) {
@@ -188,8 +188,8 @@ async function extendItem(itemId) {
         return;
     }
     
-    // Extension costs 75% of the highest tier price
-    const extensionPrice = Math.floor(item.prices[2] * 0.75);
+    // Extension costs 50% of the current tier price
+    const extensionPrice = Math.floor(item.prices[currentTier - 1] * 0.5);
     
     const success = await RainbetUtils.deductPoints(extensionPrice);
     if (!success) {
@@ -225,7 +225,7 @@ async function extendItem(itemId) {
     alert(`${item.baseName} extended by ${timeText}!`);
     await updateUserPoints();
     await updateLeaderboard();
-    checkActiveItems();
+    await checkActiveItems();
 }
 
 async function claimDailyCredits() {
@@ -333,25 +333,47 @@ async function updateLeaderboard() {
     }
 }
 
-function checkActiveItems() {
+async function checkActiveItems() {
     const currentUser = RainbetUtils.getCurrentUser();
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
-    const userData = userdata[currentUser] || { items: {}, itemTiers: {} };
-    const now = Date.now();
-    
+    if (!currentUser) return;
+
+    // Use the same method as getUserActiveEffects to get active items from both Firebase and localStorage
+    const activeEffects = await RainbetUtils.getUserActiveEffects(currentUser);
     const activeItems = [];
-    
-    SHOP_ITEMS.forEach(item => {
-        const currentTier = getUserItemTier(item.id);
-        if (currentTier > 0) {
-            const activeItemKey = item.id + '_' + currentTier;
-            const purchaseTime = userData.items[activeItemKey];
-            if (purchaseTime && purchaseTime > (now - item.durations[currentTier - 1])) {
-                const timeLeft = Math.ceil((purchaseTime + item.durations[currentTier - 1] - now) / (60 * 1000));
-                activeItems.push({
-                    name: item.name + ` (Tier ${currentTier})`,
-                    timeLeft: timeLeft
-                });
+
+    // Convert active effects to display format
+    activeEffects.forEach(effect => {
+        const item = SHOP_ITEMS.find(i => i.id === effect.id);
+        if (item) {
+            // Get the actual remaining time
+            let userData = null;
+
+            // Try to get user data (same approach as getUserActiveEffects)
+            try {
+                if (window.firebaseDb) {
+                    // We'll need to check Firebase here too, but for now use localStorage as fallback
+                }
+            } catch (error) {}
+
+            // Fallback to localStorage
+            const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
+            userData = userdata[currentUser];
+
+            if (userData && userData.items) {
+                const activeItemKey = `${effect.id}_${effect.tier}`;
+                const purchaseTime = userData.items[activeItemKey];
+                if (purchaseTime) {
+                    const now = Date.now();
+                    const duration = item.durations[effect.tier - 1];
+                    const timeLeft = Math.max(0, Math.ceil((purchaseTime + duration - now) / (60 * 1000)));
+
+                    if (timeLeft > 0) {
+                        activeItems.push({
+                            name: item.name + ` (Tier ${effect.tier})`,
+                            timeLeft: timeLeft
+                        });
+                    }
+                }
             }
         }
     });
@@ -392,7 +414,7 @@ function generateShopItemsHtml() {
                     const nextTier = currentTier + 1;
                     const isMaxed = currentTier >= 3;
                     const nextPrice = isMaxed ? 0 : item.prices[nextTier - 1];
-                    const extendPrice = Math.floor(item.prices[2] * 0.75);
+                    const extendPrice = currentTier > 0 ? Math.floor(item.prices[currentTier - 1] * 0.5) : 0;
                     
                     let tierDisplay = '';
                     for (let i = 1; i <= 3; i++) {
@@ -460,7 +482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await updateUserPoints();
     await updateLeaderboard();
-    checkActiveItems();
+    await checkActiveItems();
     checkDailyCreditsButton();
     
     // Update chat title properly with async call
@@ -474,7 +496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Refresh active items and leaderboard every minute
     setInterval(async () => {
-        checkActiveItems();
+        await checkActiveItems();
         await updateUserPoints();
         await updateLeaderboard();
     }, 60000);
