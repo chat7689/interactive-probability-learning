@@ -1120,7 +1120,7 @@ async function showGameResult(won, betAmount, multiplier, message) {
         }
         
         await updateUserPoints();
-        updateLeaderboard();
+        await updateLeaderboard();
         RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${taxedWinnings} points playing ${currentGame}!`);
     } else {
         pointsText = 'You lost ' + betAmount + ' points.';
@@ -1158,44 +1158,55 @@ async function updateUserPoints() {
     }
 }
 
-function updateLeaderboard() {
+async function updateLeaderboard() {
     const leaderboardList = document.getElementById('leaderboardList');
     if (!leaderboardList) return;
-    
-    leaderboardList.innerHTML = '';
-    
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
-    const userArray = [];
-    
-    for (const username in userdata) {
-        const user = userdata[username];
-        userArray.push({ username: username, points: user.points || 0 });
-    }
-    
-    userArray.sort((a, b) => b.points - a.points);
-    
-    const currentUser = RainbetUtils.getCurrentUser();
-    userArray.forEach((user, index) => {
-        const leaderDiv = document.createElement('div');
-        leaderDiv.className = 'leader-item';
-        if (user.username === currentUser) {
-            leaderDiv.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
-            leaderDiv.style.fontWeight = 'bold';
+
+    leaderboardList.innerHTML = 'Loading...';
+
+    try {
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const snapshot = await window.firebaseGet(usersRef);
+        const userArray = [];
+
+        if (snapshot.exists()) {
+            const usersData = snapshot.val();
+            for (const username in usersData) {
+                const user = usersData[username];
+                userArray.push({ username: username, points: user.points || 0 });
+            }
         }
-        
-        let trophy = '';
-        if (index === 0) trophy = '🥇 ';
-        else if (index === 1) trophy = '🥈 ';
-        else if (index === 2) trophy = '🥉 ';
-        else trophy = (index + 1) + '. ';
-        
-        leaderDiv.innerHTML = `<div class="leader-name">${trophy}${RainbetUtils.escapeHtml(user.username)}</div>` +
-                            `<div class="leader-points">${user.points}</div>`;
-        leaderboardList.appendChild(leaderDiv);
-    });
-    
-    if (userArray.length === 0) {
-        leaderboardList.innerHTML = 'No users yet';
+
+        userArray.sort((a, b) => b.points - a.points);
+
+        leaderboardList.innerHTML = '';
+        const currentUser = RainbetUtils.getCurrentUser();
+
+        userArray.forEach((user, index) => {
+            const leaderDiv = document.createElement('div');
+            leaderDiv.className = 'leader-item';
+            if (user.username === currentUser) {
+                leaderDiv.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+                leaderDiv.style.fontWeight = 'bold';
+            }
+
+            let trophy = '';
+            if (index === 0) trophy = '🥇 ';
+            else if (index === 1) trophy = '🥈 ';
+            else if (index === 2) trophy = '🥉 ';
+            else trophy = (index + 1) + '. ';
+
+            leaderDiv.innerHTML = `<div class="leader-name">${trophy}${RainbetUtils.escapeHtml(user.username)}</div>` +
+                                `<div class="leader-points">${user.points}</div>`;
+            leaderboardList.appendChild(leaderDiv);
+        });
+
+        if (userArray.length === 0) {
+            leaderboardList.innerHTML = 'No users yet';
+        }
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        leaderboardList.innerHTML = 'Error loading leaderboard';
     }
 }
 
@@ -2004,7 +2015,7 @@ function updateFlappyScore() {
 // Update game cards visual state based on enabled/disabled status
 function updateGameCards() {
     const gameCards = document.querySelectorAll('.game-card');
-    const gameTypes = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'roulette', 'bingo'];
+    const gameTypes = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'];
     
     gameCards.forEach((card, index) => {
         if (index < gameTypes.length) {
@@ -2048,7 +2059,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     await updateUserPoints();
-    updateLeaderboard();
+    await updateLeaderboard();
     loadTaxSettings();
     
     // Wait a bit for game toggles to load, then update cards
@@ -2065,7 +2076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Update leaderboard every 30 seconds
     setInterval(async () => {
-        updateLeaderboard();
+        await updateLeaderboard();
         await updateUserPoints();
     }, 30000);
 });

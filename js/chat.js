@@ -1689,7 +1689,7 @@ async function loadGameToggles() {
             coinflip: true, cups: true, dice: true, slots: true,
             blackjack: true, lottery: true, mines: true,
             memory: true, poker: true, reaction: true,
-            roulette: true, baccarat: true, crash: true
+            roulette: true, baccarat: true, crash: true, flappybird: true
         };
         
         const toggles = snapshot.exists() ? snapshot.val() : defaultToggles;

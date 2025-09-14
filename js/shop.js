@@ -150,7 +150,7 @@ async function buyItemTier(itemId) {
     
     alert(`${item.baseName} upgraded to Tier ${nextTier}!`);
     await updateUserPoints();
-    updateLeaderboard();
+    await updateLeaderboard();
     checkActiveItems();
 }
 
@@ -206,7 +206,7 @@ async function extendItem(itemId) {
     
     alert(`${item.baseName} extended by ${timeText}!`);
     await updateUserPoints();
-    updateLeaderboard();
+    await updateLeaderboard();
     checkActiveItems();
 }
 
@@ -236,7 +236,7 @@ async function claimDailyCredits() {
     
     alert('Daily points claimed! +50 points');
     await updateUserPoints();
-    updateLeaderboard();
+    await updateLeaderboard();
     checkDailyCreditsButton();
     await RainbetUtils.addSystemMessage(currentUser + ' claimed their daily points!');
 }
@@ -263,42 +263,55 @@ async function updateUserPoints() {
     document.getElementById('userShopPoints').textContent = points;
 }
 
-function updateLeaderboard() {
+async function updateLeaderboard() {
     const leaderboardList = document.getElementById('leaderboardList');
-    leaderboardList.innerHTML = '';
-    
-    const userdata = JSON.parse(localStorage.getItem('chat_userdata') || '{}');
-    const userArray = [];
-    
-    for (const username in userdata) {
-        const user = userdata[username];
-        userArray.push({ username: username, points: user.points || 0 });
-    }
-    
-    userArray.sort((a, b) => b.points - a.points);
-    
-    const currentUser = RainbetUtils.getCurrentUser();
-    userArray.forEach((user, index) => {
-        const leaderDiv = document.createElement('div');
-        leaderDiv.className = 'leader-item';
-        if (user.username === currentUser) {
-            leaderDiv.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
-            leaderDiv.style.fontWeight = 'bold';
+    if (!leaderboardList) return;
+
+    leaderboardList.innerHTML = 'Loading...';
+
+    try {
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const snapshot = await window.firebaseGet(usersRef);
+        const userArray = [];
+
+        if (snapshot.exists()) {
+            const usersData = snapshot.val();
+            for (const username in usersData) {
+                const user = usersData[username];
+                userArray.push({ username: username, points: user.points || 0 });
+            }
         }
-        
-        let trophy = '';
-        if (index === 0) trophy = '🥇 ';
-        else if (index === 1) trophy = '🥈 ';
-        else if (index === 2) trophy = '🥉 ';
-        else trophy = (index + 1) + '. ';
-        
-        leaderDiv.innerHTML = `<div class="leader-name">${trophy}${RainbetUtils.escapeHtml(user.username)}</div>` +
-                            `<div class="leader-points">${user.points}</div>`;
-        leaderboardList.appendChild(leaderDiv);
-    });
-    
-    if (userArray.length === 0) {
-        leaderboardList.innerHTML = 'No users yet';
+
+        userArray.sort((a, b) => b.points - a.points);
+
+        leaderboardList.innerHTML = '';
+        const currentUser = RainbetUtils.getCurrentUser();
+
+        userArray.forEach((user, index) => {
+            const leaderDiv = document.createElement('div');
+            leaderDiv.className = 'leader-item';
+            if (user.username === currentUser) {
+                leaderDiv.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+                leaderDiv.style.fontWeight = 'bold';
+            }
+
+            let trophy = '';
+            if (index === 0) trophy = '🥇 ';
+            else if (index === 1) trophy = '🥈 ';
+            else if (index === 2) trophy = '🥉 ';
+            else trophy = (index + 1) + '. ';
+
+            leaderDiv.innerHTML = `<div class="leader-name">${trophy}${RainbetUtils.escapeHtml(user.username)}</div>` +
+                                `<div class="leader-points">${user.points}</div>`;
+            leaderboardList.appendChild(leaderDiv);
+        });
+
+        if (userArray.length === 0) {
+            leaderboardList.innerHTML = 'No users yet';
+        }
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        leaderboardList.innerHTML = 'Error loading leaderboard';
     }
 }
 
@@ -428,7 +441,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     await updateUserPoints();
-    updateLeaderboard();
+    await updateLeaderboard();
     checkActiveItems();
     checkDailyCreditsButton();
     
@@ -445,6 +458,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(async () => {
         checkActiveItems();
         await updateUserPoints();
-        updateLeaderboard();
+        await updateLeaderboard();
     }, 60000);
 });
