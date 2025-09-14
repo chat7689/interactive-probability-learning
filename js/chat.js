@@ -881,7 +881,7 @@ async function displayMessages(forceRefresh = false) {
 
                 const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
 
-                // Use message ID as primary duplicate check, fallback to content+time for older messages
+                // Enhanced duplicate detection with better system message handling
                 if (msg.id) {
                     // Modern messages have IDs - this is the most reliable check
                     if (seenMessages.has(msg.id)) {
@@ -892,14 +892,35 @@ async function displayMessages(forceRefresh = false) {
                 } else {
                     // Fallback for messages without IDs - use content+user+time
                     const msgKey = `${msg.username}-${msg.message}`;
-                    if (seenMessages.has(msgKey)) {
-                        const lastTime = seenMessages.get(msgKey);
-                        if (Math.abs(msgTime - lastTime) < 2000) {
-                            console.log(`Skipping duplicate by content: ${msgKey}`);
+
+                    // For system messages, be more aggressive about duplicate detection
+                    if (msg.isSystem || msg.username === 'System') {
+                        if (seenMessages.has(msgKey)) {
+                            console.log(`Skipping duplicate system message: ${msgKey}`);
                             continue;
                         }
+                        seenMessages.set(msgKey, msgTime);
+                    } else {
+                        // For regular user messages, use time-based duplicate detection
+                        if (seenMessages.has(msgKey)) {
+                            const lastTime = seenMessages.get(msgKey);
+                            if (Math.abs(msgTime - lastTime) < 2000) {
+                                console.log(`Skipping duplicate by content: ${msgKey}`);
+                                continue;
+                            }
+                        }
+                        seenMessages.set(msgKey, msgTime);
                     }
-                    seenMessages.set(msgKey, msgTime);
+                }
+
+                // Also check content-based duplicates regardless of ID (extra safety for system messages)
+                const contentKey = `${msg.username}-${msg.message}`;
+                if (msg.isSystem || msg.username === 'System') {
+                    if (seenMessages.has(`system_${contentKey}`)) {
+                        console.log(`Skipping duplicate system message by content: ${contentKey}`);
+                        continue;
+                    }
+                    seenMessages.set(`system_${contentKey}`, msgTime);
                 }
 
                 displayedMessageIds.add(msg.id);
