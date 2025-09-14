@@ -106,8 +106,8 @@ body {
 }
 
 .settings-btn { left: 15px; }
+.info-btn { right: 150px; }
 .shop-btn { right: 105px; }
-.info-btn { right: 60px; }
 .games-btn { right: 15px; }
 
 .settings-btn:hover, .shop-btn:hover, .games-btn:hover, .info-btn:hover {
