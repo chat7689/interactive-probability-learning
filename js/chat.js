@@ -281,13 +281,14 @@ async function enterChat() {
         const settings = await RainbetUtils.getChatSettings();
         document.getElementById('chatTitle').textContent = settings.chatName;
         
-        // Setup real-time message listener only after we're fully in chat  
+        // Setup real-time message listener only after we're fully in chat
         setupMessageListener();
-        
+
         // Setup online users listener
         setupOnlineUsersListener();
-        
-        // Don't call displayMessages here - let the Firebase listener handle it
+
+        // Initial load of existing messages
+        await displayMessages(true);
         await updateLeaderboard();
         
         const messageInput = document.getElementById('messageInput');
@@ -343,7 +344,7 @@ function setupMessageListener() {
         
         displayMessagesTimeout = setTimeout(() => {
             console.log(`>>> DISPLAYING MESSAGES at ${Date.now()}`);
-            displayMessages();
+            displayMessages(); // Don't force refresh - only show new messages
         }, 200); // 200ms delay to batch updates
     });
     
@@ -749,24 +750,26 @@ async function sendMessage() {
         // Reset sending flag in error case
         messageSending = false;
         
-        await displayMessages();
+        await displayMessages(true); // Force refresh for error fallback
     }
 }
 
-async function displayMessages() {
+async function displayMessages(forceRefresh = false) {
     const callTime = Date.now();
-    console.log(`*** DISPLAY MESSAGES CALLED at ${callTime} ***`);
+    console.log(`*** DISPLAY MESSAGES CALLED at ${callTime} (forceRefresh: ${forceRefresh}) ***`);
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) {
         console.error('Messages div not found');
         return;
     }
-    
+
     const wasAtBottom = messagesDiv.scrollHeight - messagesDiv.clientHeight <= messagesDiv.scrollTop + 1;
-    
-    // Clear everything and start fresh - this prevents the weird delay issue
-    messagesDiv.innerHTML = '';
-    displayedMessageIds.clear();
+
+    // Only clear and rebuild if forced (initial load or major update needed)
+    if (forceRefresh) {
+        messagesDiv.innerHTML = '';
+        displayedMessageIds.clear();
+    }
     
     // Force scroll to stay at bottom during rebuild to prevent jumping
     const shouldStayAtBottom = wasAtBottom;
@@ -794,21 +797,38 @@ async function displayMessages() {
             // Show last 50 messages
             const recentMessages = messages.slice(-50);
             console.log(`Total messages in Firebase: ${messages.length}, showing last ${recentMessages.length}`);
-            
+
+            // If not force refresh, only process new messages
+            const messagesToProcess = forceRefresh
+                ? recentMessages
+                : recentMessages.filter(msg => !displayedMessageIds.has(msg.id));
+
+            if (!forceRefresh && messagesToProcess.length === 0) {
+                console.log('No new messages to display');
+                return;
+            }
+
+            console.log(`Processing ${messagesToProcess.length} messages (${forceRefresh ? 'full refresh' : 'new only'})`);
+
             // Simple duplicate prevention - track by content and user within 2 seconds
             const seenMessages = new Map();
             let displayedCount = 0;
-            
-            for (const msg of recentMessages) {
+
+            for (const msg of messagesToProcess) {
                 console.log('Processing message:', msg); // Debug: see full message structure
-                
+
                 if (msg.targetUser && msg.targetUser !== currentUser) {
                     continue;
                 }
-                
+
+                // Skip if already displayed (extra safety check)
+                if (!forceRefresh && displayedMessageIds.has(msg.id)) {
+                    continue;
+                }
+
                 const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
                 const msgKey = `${msg.username}-${msg.message}`;
-                
+
                 // Skip duplicates within 2 seconds
                 if (seenMessages.has(msgKey)) {
                     const lastTime = seenMessages.get(msgKey);
@@ -818,7 +838,7 @@ async function displayMessages() {
                     }
                 }
                 seenMessages.set(msgKey, msgTime);
-                
+
                 displayedMessageIds.add(msg.id);
                 displayedCount++;
                 console.log(`Displaying message ${displayedCount}: ${msg.username}: ${msg.message}`);
