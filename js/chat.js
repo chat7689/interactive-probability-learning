@@ -1277,6 +1277,7 @@ function openAdmin() {
     // Initialize admin panel data
     refreshQuickStats();
     loadCurrentTaxSettings();
+    loadCurrentActivationCode();
     initializeAdminCollapsible();
     
     document.getElementById('adminModal').style.setProperty('display', 'block', 'important');
@@ -1313,6 +1314,7 @@ function openAdmin() {
     refreshEconomicStats();
     refreshQuickStats();
     loadCurrentTaxSettings();
+    loadCurrentActivationCode();
 }
 
 function closeAdmin() {
@@ -1401,6 +1403,41 @@ async function updateChatName() {
     document.getElementById('chatTitle').textContent = newName;
     await RainbetUtils.addSystemMessage(`Chat name changed to: ${newName}`);
     alert('Chat name updated!');
+}
+
+async function updateActivationCode() {
+    const newCode = document.getElementById('activationCodeInput').value.trim();
+    if (!newCode) {
+        alert('Please enter an activation code');
+        return;
+    }
+
+    if (newCode.length < 3) {
+        alert('Activation code must be at least 3 characters long');
+        return;
+    }
+
+    try {
+        await RainbetUtils.updateChatSettings({ activationCode: newCode });
+        document.getElementById('currentActivationCode').textContent = newCode;
+        document.getElementById('activationCodeInput').value = '';
+        await RainbetUtils.addSystemMessage(`🔑 Admin updated registration activation code`);
+        logSecurityEvent('ACTIVATION_CODE_CHANGED', RainbetUtils.getCurrentUser(), `Changed activation code`);
+        alert('Activation code updated successfully!');
+    } catch (error) {
+        console.error('Error updating activation code:', error);
+        alert('Error updating activation code');
+    }
+}
+
+async function loadCurrentActivationCode() {
+    try {
+        const settings = await RainbetUtils.getChatSettings();
+        document.getElementById('currentActivationCode').textContent = settings.activationCode || 'code';
+    } catch (error) {
+        console.error('Error loading activation code:', error);
+        document.getElementById('currentActivationCode').textContent = 'Error loading';
+    }
 }
 
 async function givePointsToUser() {

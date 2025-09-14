@@ -189,6 +189,14 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                             <input type="text" id="chatNameInput" placeholder="Enter new chat name" style="width: 200px;">
                             <button onclick="updateChatName()" style="background: #3498db;">Update</button>
                         </div>
+                        <div class="simple-form" style="margin-top: 15px;">
+                            <label>🔑 Registration Activation Code:</label>
+                            <input type="text" id="activationCodeInput" placeholder="Enter new activation code" style="width: 200px;">
+                            <button onclick="updateActivationCode()" style="background: #27ae60;">Update Code</button>
+                            <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                                Current code: <span id="currentActivationCode" style="font-weight: bold;">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="admin-group">
