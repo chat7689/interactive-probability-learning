@@ -314,6 +314,7 @@ async function enterChat() {
         document.getElementById('settingsButton').style.display = 'flex';
         document.getElementById('shopButton').style.display = 'flex';
         document.getElementById('gamesButton').style.display = 'flex';
+        document.getElementById('infoButton').style.display = 'flex';
         document.getElementById('leaderboard').style.display = 'block';
         
         // Update chat title
@@ -830,16 +831,32 @@ async function displayMessages(forceRefresh = false) {
             const messagesData = snapshot.val();
             const messages = Object.entries(messagesData).map(([id, msg]) => ({...msg, id}));
             
+            // Pre-filter: Remove duplicate system messages BEFORE sorting
+            const systemMessagesSeen = new Set();
+            const filteredMessages = messages.filter(msg => {
+                if (msg.isSystem || msg.username === 'System') {
+                    const systemKey = `${msg.username}-${msg.message}`;
+                    if (systemMessagesSeen.has(systemKey)) {
+                        console.log(`Pre-filtering duplicate system message: ${systemKey}`);
+                        return false; // Remove this duplicate
+                    }
+                    systemMessagesSeen.add(systemKey);
+                }
+                return true; // Keep all non-system messages and first occurrence of system messages
+            });
+
+            console.log(`Filtered ${messages.length - filteredMessages.length} duplicate system messages`);
+
             // Sort by timestamp
-            messages.sort((a, b) => {
+            filteredMessages.sort((a, b) => {
                 const timeA = a.timestamp?.seconds ? a.timestamp.seconds * 1000 : a.timestamp || 0;
                 const timeB = b.timestamp?.seconds ? b.timestamp.seconds * 1000 : b.timestamp || 0;
                 return timeA - timeB;
             });
-            
+
             // Show last 50 messages
-            const recentMessages = messages.slice(-50);
-            console.log(`Total messages in Firebase: ${messages.length}, showing last ${recentMessages.length}`);
+            const recentMessages = filteredMessages.slice(-50);
+            console.log(`Total messages after filtering: ${filteredMessages.length}, showing last ${recentMessages.length}`);
 
             // If not force refresh, only process new messages
             const messagesToProcess = forceRefresh
@@ -881,7 +898,7 @@ async function displayMessages(forceRefresh = false) {
 
                 const msgTime = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || 0;
 
-                // Enhanced duplicate detection with better system message handling
+                // Simplified duplicate detection (system messages already pre-filtered)
                 if (msg.id) {
                     // Modern messages have IDs - this is the most reliable check
                     if (seenMessages.has(msg.id)) {
@@ -893,34 +910,15 @@ async function displayMessages(forceRefresh = false) {
                     // Fallback for messages without IDs - use content+user+time
                     const msgKey = `${msg.username}-${msg.message}`;
 
-                    // For system messages, be more aggressive about duplicate detection
-                    if (msg.isSystem || msg.username === 'System') {
-                        if (seenMessages.has(msgKey)) {
-                            console.log(`Skipping duplicate system message: ${msgKey}`);
+                    // Use time-based duplicate detection for user messages
+                    if (seenMessages.has(msgKey)) {
+                        const lastTime = seenMessages.get(msgKey);
+                        if (Math.abs(msgTime - lastTime) < 2000) {
+                            console.log(`Skipping duplicate by content: ${msgKey}`);
                             continue;
                         }
-                        seenMessages.set(msgKey, msgTime);
-                    } else {
-                        // For regular user messages, use time-based duplicate detection
-                        if (seenMessages.has(msgKey)) {
-                            const lastTime = seenMessages.get(msgKey);
-                            if (Math.abs(msgTime - lastTime) < 2000) {
-                                console.log(`Skipping duplicate by content: ${msgKey}`);
-                                continue;
-                            }
-                        }
-                        seenMessages.set(msgKey, msgTime);
                     }
-                }
-
-                // Also check content-based duplicates regardless of ID (extra safety for system messages)
-                const contentKey = `${msg.username}-${msg.message}`;
-                if (msg.isSystem || msg.username === 'System') {
-                    if (seenMessages.has(`system_${contentKey}`)) {
-                        console.log(`Skipping duplicate system message by content: ${contentKey}`);
-                        continue;
-                    }
-                    seenMessages.set(`system_${contentKey}`, msgTime);
+                    seenMessages.set(msgKey, msgTime);
                 }
 
                 displayedMessageIds.add(msg.id);

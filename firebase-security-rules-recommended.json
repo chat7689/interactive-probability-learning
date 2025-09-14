@@ -1,0 +1,36 @@
+{
+  "rules": {
+    // Only allow access from your GitHub Pages domain
+    ".read": "request.origin == 'https://chat7689.github.io' || request.origin == 'http://localhost:8000'",
+    ".write": "request.origin == 'https://chat7689.github.io' || request.origin == 'http://localhost:8000'",
+
+    // Additional security: rate limiting and data validation
+    "messages": {
+      // Limit message creation rate
+      ".write": "(request.origin == 'https://chat7689.github.io' || request.origin == 'http://localhost:8000') && (!data.exists() || request.time > data.child('timestamp').val() + 1000)",
+      "$messageId": {
+        // Validate message structure
+        ".validate": "newData.hasChildren(['username', 'message', 'timestamp']) && newData.child('username').isString() && newData.child('message').isString() && newData.child('username').val().length <= 15 && newData.child('message').val().length <= 500"
+      }
+    },
+
+    "users": {
+      "$userId": {
+        // Validate user data structure
+        ".validate": "newData.hasChild('points') && newData.child('points').isNumber() && newData.child('points').val() >= 0 && newData.child('points').val() <= 1000000"
+      }
+    },
+
+    "accounts": {
+      "$username": {
+        // Validate account structure and username length
+        ".validate": "newData.hasChild('password') && $username.length >= 3 && $username.length <= 15"
+      }
+    },
+
+    "chatSettings": {
+      // Only allow reasonable chat settings
+      ".validate": "newData.hasChild('title') && newData.child('title').val().length <= 100"
+    }
+  }
+}

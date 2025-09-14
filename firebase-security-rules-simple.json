@@ -1,0 +1,28 @@
+{
+  "rules": {
+    // Allow read/write only from your domain
+    ".read": "request.auth != null || request.origin == 'https://chat7689.github.io'",
+    ".write": "request.auth != null || request.origin == 'https://chat7689.github.io'",
+
+    // Messages - basic structure validation
+    "messages": {
+      "$messageId": {
+        ".validate": "newData.hasChildren(['username', 'message', 'timestamp'])"
+      }
+    },
+
+    // User data validation
+    "users": {
+      "$userId": {
+        ".validate": "newData.hasChild('points') && newData.child('points').isNumber()"
+      }
+    },
+
+    // Accounts validation
+    "accounts": {
+      "$username": {
+        ".validate": "newData.hasChild('password')"
+      }
+    }
+  }
+}
