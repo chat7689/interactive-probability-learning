@@ -1637,14 +1637,22 @@ async function clearAllMessages() {
         localStorage.removeItem('chat_messages');
 
         // Clear the chat display immediately
-        const chatMessages = document.getElementById('chatMessages');
-        if (chatMessages) {
-            chatMessages.innerHTML = '';
+        const messagesDiv = document.getElementById('messages');
+        if (messagesDiv) {
+            messagesDiv.innerHTML = '';
         }
+
+        // Clear the seenMessages cache to avoid duplicates
+        seenMessages.clear();
 
         // Add system message about clearing
         await RainbetUtils.addSystemMessage('🗑️ Admin cleared all chat messages');
         logSecurityEvent('MESSAGES_CLEARED', RainbetUtils.getCurrentUser(), 'Cleared all chat messages');
+
+        // Refresh the message display to show the system message
+        setTimeout(async () => {
+            await displayMessages(true);
+        }, 500); // Small delay to ensure the system message is saved first
 
         alert('All messages cleared successfully!');
     } catch (error) {
