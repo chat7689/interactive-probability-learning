@@ -111,7 +111,6 @@ const GAMES_CONFIG = {
         number: 36, red: 1.9, black: 1.9, odd: 1.9, even: 1.9,
         low: 1.9, high: 1.9, dozen: 2.85, column: 2.85
     },
-    baccarat: { player: 1.9, banker: 1.85, tie: 8.0 },
     crash: { averageMultiplier: 2.0 } // Dynamic system
 };
 
@@ -230,7 +229,7 @@ async function loadGameToggles() {
             GAME_TOGGLES = {
                 coinflip: true, cups: true, dice: true, slots: true, blackjack: true,
                 lottery: true, mines: true, memory: true, poker: true, reaction: true,
-                roulette: true, baccarat: true, crash: true, flappybird: true
+                roulette: true, crash: true, flappybird: true
             };
         }
     } catch (error) {
@@ -239,7 +238,7 @@ async function loadGameToggles() {
         GAME_TOGGLES = {
             coinflip: true, cups: true, dice: true, slots: true, blackjack: true,
             lottery: true, mines: true, memory: true, poker: true, reaction: true,
-            roulette: true, baccarat: true, crash: true, flappybird: true
+            roulette: true, crash: true, flappybird: true
         };
     }
 }
@@ -262,6 +261,8 @@ function backToGames() {
 async function initializeGames() {
     await loadTaxSettings();
     await loadGameToggles();
+    // Update game card visual states after loading toggles
+    updateGameCards();
 }
 
 // Initialize when page loads
@@ -332,9 +333,6 @@ async function showGame(gameType) {
             break;
         case 'roulette':
             setupRoulette(gameContent);
-            break;
-        case 'baccarat':
-            setupBaccarat(gameContent);
             break;
         case 'crash':
             setupCrash(gameContent);
@@ -1102,7 +1100,7 @@ function endMinesGame(won, message, customMultiplier = null) {
 async function deductPoints(amount) {
     const success = await RainbetUtils.deductPoints(amount);
     if (!success) {
-        alert('Not enough points! You need ' + amount + ' points to play.');
+        alert('Not enough credits! You need ' + amount + ' credits to play.');
         return false;
     }
     updateUserPoints();
@@ -1649,88 +1647,6 @@ function spinRoulette() {
     document.getElementById('spinBtn').disabled = true;
 }
 
-// Baccarat Game
-function setupBaccarat(container) {
-    container.innerHTML = `
-        <h3>🂠 Baccarat</h3>
-        <p>Bet on Player, Banker, or Tie!</p>
-        <div class="baccarat-table">
-            <div class="baccarat-hands">
-                <div class="hand">
-                    <h4>👤 Player</h4>
-                    <div id="playerCards">Ready</div>
-                    <div id="playerTotal">-</div>
-                </div>
-                <div class="hand">
-                    <h4>🏦 Banker</h4>
-                    <div id="bankerCards">Ready</div>
-                    <div id="bankerTotal">-</div>
-                </div>
-            </div>
-        </div>
-        <div class="baccarat-bets" style="margin: 20px 0;">
-            <h4>Place Your Bet:</h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                <button class="bet-btn" onclick="setBaccaratBet('player')">👤 Player (2x)</button>
-                <button class="bet-btn" onclick="setBaccaratBet('banker')">🏦 Banker (1.95x)</button>
-                <button class="bet-btn" onclick="setBaccaratBet('tie')">🤝 Tie (8x)</button>
-            </div>
-        </div>
-        <button class="game-btn" onclick="dealBaccarat()" id="baccaratDealBtn" disabled>Deal Cards</button>
-        <div id="baccaratStatus"></div>
-    `;
-}
-
-let baccaratBet = null;
-
-function setBaccaratBet(type) {
-    baccaratBet = type;
-    document.getElementById('baccaratDealBtn').disabled = false;
-    document.getElementById('baccaratStatus').innerHTML = `Bet placed on: ${type.toUpperCase()}`;
-}
-
-function dealBaccarat() {
-    if (!baccaratBet || gameInProgress) return;
-    
-    lockBetAmount();
-    gameInProgress = true;
-    const betAmount = parseInt(document.getElementById('betAmount').value);
-    
-    // Deal cards (simplified - just calculate totals)
-    const playerCard1 = Math.floor(Math.random() * 9) + 1;
-    const playerCard2 = Math.floor(Math.random() * 9) + 1;
-    const bankerCard1 = Math.floor(Math.random() * 9) + 1;
-    const bankerCard2 = Math.floor(Math.random() * 9) + 1;
-    
-    const playerTotal = (playerCard1 + playerCard2) % 10;
-    const bankerTotal = (bankerCard1 + bankerCard2) % 10;
-    
-    document.getElementById('playerCards').innerHTML = `${playerCard1}, ${playerCard2}`;
-    document.getElementById('playerTotal').innerHTML = `Total: ${playerTotal}`;
-    document.getElementById('bankerCards').innerHTML = `${bankerCard1}, ${bankerCard2}`;
-    document.getElementById('bankerTotal').innerHTML = `Total: ${bankerTotal}`;
-    
-    let won = false;
-    let multiplier = 1;
-    let result = '';
-    
-    if (playerTotal > bankerTotal) {
-        result = 'Player Wins!';
-        if (baccaratBet === 'player') { won = true; multiplier = 2; }
-    } else if (bankerTotal > playerTotal) {
-        result = 'Banker Wins!';
-        if (baccaratBet === 'banker') { won = true; multiplier = 1.95; }
-    } else {
-        result = 'Tie!';
-        if (baccaratBet === 'tie') { won = true; multiplier = 8; }
-    }
-    
-    showGameResult(won, result, `Player: ${playerTotal}, Banker: ${bankerTotal}`, multiplier);
-    
-    gameInProgress = false;
-    baccaratBet = null;
-    document.getElementById('baccaratDealBtn').disabled = true;
-}
 
 // Crash Game
 function setupCrash(container) {
@@ -2034,7 +1950,7 @@ function updateFlappyScore() {
 // Update game cards visual state based on enabled/disabled status
 function updateGameCards() {
     const gameCards = document.querySelectorAll('.game-card');
-    const gameTypes = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'];
+    const gameTypes = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'crash', 'flappybird'];
     
     gameCards.forEach((card, index) => {
         if (index < gameTypes.length) {

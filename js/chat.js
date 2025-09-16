@@ -533,7 +533,6 @@ async function sendMessage() {
 • 🃏 5-Card Poker - Make the best hand
 • ⚡ Quick Draw - Test your reflexes
 • 🎡 Roulette - Classic casino wheel
-• 🂠 Baccarat - Player vs Banker
 • 📈 Crash - Cash out before it crashes
 • 🐦 Flappy Bird - Navigate through pipes (1 credit per point)
 
@@ -1849,7 +1848,7 @@ async function loadGameToggles() {
             coinflip: true, cups: true, dice: true, slots: true,
             blackjack: true, lottery: true, mines: true,
             memory: true, poker: true, reaction: true,
-            roulette: true, baccarat: true, crash: true, flappybird: true
+            roulette: true, crash: true, flappybird: true
         };
         
         const toggles = snapshot.exists() ? snapshot.val() : defaultToggles;
@@ -1872,7 +1871,7 @@ async function loadGameMultipliers() {
             coinflip: 1.9, cups: 2.85, dice: 3.0, slots: 4.0,
             blackjack: 1.9, lottery: 10.0, mines: 1.2,
             memory: 3.5, poker: 2.5, reaction: 2.0,
-            roulette: 2.0, baccarat: 2.0, crash: 2.0
+            roulette: 2.0, crash: 2.0
         };
         
         const multipliers = snapshot.exists() ? snapshot.val() : defaultMultipliers;
@@ -1895,7 +1894,7 @@ async function loadCurrentGameToggles() {
         const toggles = snapshot.exists() ? snapshot.val() : {};
         
         // Update checkboxes with current states
-        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'].forEach(game => {
+        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'crash', 'flappybird'].forEach(game => {
             const checkbox = document.getElementById(`toggle_${game}`);
             if (checkbox) {
                 checkbox.checked = toggles[game] !== false; // Default to true if not specified
@@ -1909,7 +1908,7 @@ async function loadCurrentGameToggles() {
 async function updateAllGameToggles() {
     try {
         const toggles = {};
-        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'].forEach(game => {
+        ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'crash', 'flappybird'].forEach(game => {
             const checkbox = document.getElementById(`toggle_${game}`);
             if (checkbox) toggles[game] = checkbox.checked;
         });
@@ -1919,6 +1918,12 @@ async function updateAllGameToggles() {
         
         await RainbetUtils.addSystemMessage('🎮 Admin updated game toggles');
         logSecurityEvent('GAME_TOGGLES_UPDATED', RainbetUtils.getCurrentUser(), `Updated game availability`);
+
+        // Update game card visual states if on games page
+        if (typeof updateGameCards === 'function') {
+            updateGameCards();
+        }
+
         alert('Game toggles updated successfully!');
     } catch (error) {
         console.error('Error updating game toggles:', error);
@@ -1935,7 +1940,7 @@ async function setGlobalMultiplier() {
     }
     
     try {
-        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'];
+        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'crash', 'flappybird'];
         const multipliers = {};
         
         games.forEach(game => {
@@ -1959,7 +1964,7 @@ async function setGlobalMultiplier() {
 async function updateIndividualMultipliers() {
     try {
         const multipliers = {};
-        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'baccarat', 'crash', 'flappybird'];
+        const games = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'crash', 'flappybird'];
         
         games.forEach(game => {
             const input = document.getElementById(`mult_${game}`);
