@@ -374,12 +374,12 @@ function setCoinChoice(choice) {
     addGameMessage('You chose: ' + choice.toUpperCase());
 }
 
-function flipCoin() {
+async function flipCoin() {
     if (!coinChoice || gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     document.getElementById('flipBtn').disabled = true;
@@ -435,12 +435,12 @@ function setDiceChoice(choice) {
     addGameMessage('You chose: ' + choice.toUpperCase());
 }
 
-function rollDice() {
+async function rollDice() {
     if (!diceChoice || gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     document.getElementById('rollBtn').disabled = true;
@@ -485,12 +485,12 @@ function setupSlots(container) {
     `;
 }
 
-function spinSlots() {
+async function spinSlots() {
     if (gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     document.getElementById('spinSlotsBtn').disabled = true;
@@ -543,12 +543,12 @@ function setupCups(container) {
     selectedCup = null;
 }
 
-function startCupGame() {
+async function startCupGame() {
     if (gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     document.getElementById('startCupBtn').disabled = true;
@@ -770,12 +770,12 @@ function displayCards(hand, elementId) {
     document.getElementById(elementId).textContent = display;
 }
 
-function startBlackjack() {
+async function startBlackjack() {
     if (gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     document.getElementById('dealBtn').disabled = true;
@@ -911,12 +911,12 @@ function setupLottery(container) {
     `;
 }
 
-function playLottery() {
+async function playLottery() {
     if (gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     document.getElementById('lotteryBtn').disabled = true;
@@ -990,12 +990,12 @@ function createMinesGrid() {
     }
 }
 
-function startMines() {
+async function startMines() {
     if (gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     document.getElementById('startMinesBtn').disabled = true;
@@ -1099,9 +1099,10 @@ function endMinesGame(won, message, customMultiplier = null) {
 }
 
 // Helper functions
-function deductPoints(amount) {
-    if (!RainbetUtils.deductPoints(amount)) {
-        alert('Not enough points! You need ' + amount + ' points.');
+async function deductPoints(amount) {
+    const success = await RainbetUtils.deductPoints(amount);
+    if (!success) {
+        alert('Not enough points! You need ' + amount + ' points to play.');
         return false;
     }
     updateUserPoints();
@@ -1256,10 +1257,10 @@ let playerSequence = [];
 let memoryLevel = 1;
 let memoryShowingSequence = false;
 
-function startMemoryGame() {
+async function startMemoryGame() {
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     memoryLevel = 1;
     memorySequence = [];
@@ -1355,10 +1356,10 @@ function setupPoker(container) {
 let pokerHand = [];
 let pokerSelectedCards = [];
 
-function dealPokerHand() {
+async function dealPokerHand() {
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     const suits = ['♠', '♥', '♦', '♣'];
@@ -1493,10 +1494,10 @@ function setupReaction(container) {
 let reactionStartTime = 0;
 let reactionTimeout = null;
 
-function startReactionGame() {
+async function startReactionGame() {
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     const circle = document.getElementById('reactionCircle');
@@ -1753,12 +1754,12 @@ let crashActive = false;
 let crashInterval = null;
 let crashPoint = 1;
 
-function startCrash() {
+async function startCrash() {
     if (gameInProgress) return;
     
     lockBetAmount();
     const betAmount = parseInt(document.getElementById('betAmount').value);
-    if (!deductPoints(betAmount)) return;
+    if (!(await deductPoints(betAmount))) return;
     
     gameInProgress = true;
     crashActive = true;

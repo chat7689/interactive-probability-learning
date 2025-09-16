@@ -1627,15 +1627,30 @@ async function setAllUsersPoints() {
 }
 
 async function clearAllMessages() {
-    if (!confirm('Are you sure you want to clear all messages?')) return;
-    
+    if (!confirm('Are you sure you want to clear all messages? This action cannot be undone.')) return;
+
     try {
+        // Clear Firebase messages
         const messagesRef = window.firebaseRef(window.firebaseDb, 'messages');
         await window.firebaseSet(messagesRef, null);
-        alert('All messages cleared!');
+
+        // Clear local storage messages as fallback
+        localStorage.removeItem('chat_messages');
+
+        // Clear the chat display immediately
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.innerHTML = '';
+        }
+
+        // Add system message about clearing
+        await RainbetUtils.addSystemMessage('🗑️ Admin cleared all chat messages');
+        logSecurityEvent('MESSAGES_CLEARED', RainbetUtils.getCurrentUser(), 'Cleared all chat messages');
+
+        alert('All messages cleared successfully!');
     } catch (error) {
         console.error('Error clearing messages:', error);
-        alert('Error clearing messages');
+        alert('Error clearing messages: ' + error.message);
     }
 }
 
