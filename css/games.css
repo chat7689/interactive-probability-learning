@@ -11,19 +11,22 @@
 }
 
 .game-card {
-    background: #3498db;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.9) 0%, rgba(41, 128, 185, 0.9) 100%);
     color: white;
-    padding: 20px;
-    border-radius: 6px;
+    padding: 25px;
+    border-radius: 18px;
     text-align: center;
     cursor: pointer;
-    border: 1px solid #2980b9;
-    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
 }
 
 .game-card:hover {
-    background: #2980b9;
-    transform: translateY(-2px);
+    background: linear-gradient(135deg, rgba(41, 128, 185, 1) 0%, rgba(39, 174, 96, 1) 100%);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(52, 152, 219, 0.4);
 }
 
 .game-card h3 {
