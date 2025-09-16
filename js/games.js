@@ -114,104 +114,106 @@ const GAMES_CONFIG = {
     crash: { averageMultiplier: 2.0 } // Dynamic system
 };
 
-// Progressive tax system - can be configured by admin
-let TAX_ENABLED = true; // Global tax toggle
+// New tax system - flat tax + leaderboard-based progressive tax
+let FLAT_TAX_RATE = 0.05; // 5% default flat tax
+let PROGRESSIVE_TAX_RATE = 0.005; // 0.5% default per rank
 let GAME_TOGGLES = {}; // Store which games are enabled/disabled
-let PROGRESSIVE_TAX_BRACKETS = [
-    { threshold: 0, rate: 0.00 },      // 0% tax on first 0-50 points
-    { threshold: 50, rate: 0.05 },     // 5% tax on 51-200 points
-    { threshold: 200, rate: 0.10 },    // 10% tax on 201-500 points
-    { threshold: 500, rate: 0.15 },    // 15% tax on 501-1000 points
-    { threshold: 1000, rate: 0.20 }    // 20% tax on 1000+ points
-];
 
-// Function to apply progressive tax to winnings
-function applyTax(winnings) {
-    if (!TAX_ENABLED || winnings <= 0) return winnings;
-    
-    let remainingWinnings = winnings;
-    let totalTax = 0;
-    
-    // Apply progressive tax brackets
-    for (let i = 0; i < PROGRESSIVE_TAX_BRACKETS.length; i++) {
-        const currentBracket = PROGRESSIVE_TAX_BRACKETS[i];
-        const nextBracket = PROGRESSIVE_TAX_BRACKETS[i + 1];
-        
-        // Calculate the amount in this bracket
-        let taxableInBracket;
-        if (nextBracket) {
-            // Not the highest bracket
-            const bracketMax = nextBracket.threshold;
-            taxableInBracket = Math.min(remainingWinnings, Math.max(0, bracketMax - currentBracket.threshold));
-        } else {
-            // Highest bracket - all remaining winnings
-            taxableInBracket = Math.max(0, remainingWinnings - currentBracket.threshold);
+// Function to get current user's leaderboard position and total players
+async function getLeaderboardPosition(username) {
+    try {
+        if (window.firebaseDb) {
+            const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+            const snapshot = await window.firebaseGet(usersRef);
+            if (snapshot.exists()) {
+                const users = snapshot.val();
+                const sortedUsers = Object.entries(users)
+                    .map(([name, data]) => ({ username: name, points: data.points || 0 }))
+                    .sort((a, b) => b.points - a.points);
+
+                const playerPosition = sortedUsers.findIndex(user => user.username === username);
+                return {
+                    rank: playerPosition + 1, // 1-based ranking
+                    totalPlayers: sortedUsers.length
+                };
+            }
         }
-        
-        // Apply tax for this bracket
-        if (taxableInBracket > 0 && winnings > currentBracket.threshold) {
-            totalTax += taxableInBracket * currentBracket.rate;
-        }
+    } catch (error) {
+        console.error('Error getting leaderboard position:', error);
     }
-    
-    return Math.floor(winnings - totalTax);
+
+    // Fallback - assume middle position
+    return { rank: 5, totalPlayers: 10 };
+}
+
+// Function to apply new tax system to winnings
+async function applyTax(winnings, username = null) {
+    if (winnings <= 0) return winnings;
+
+    const currentUser = username || RainbetUtils.getCurrentUser();
+    const { rank, totalPlayers } = await getLeaderboardPosition(currentUser);
+
+    // Calculate flat tax
+    const flatTax = winnings * FLAT_TAX_RATE;
+
+    // Calculate progressive tax based on leaderboard position
+    // Formula: (totalPlayers - rank) * progressiveRate * winnings
+    const progressiveTaxMultiplier = Math.max(0, totalPlayers - rank) * PROGRESSIVE_TAX_RATE;
+    const progressiveTax = winnings * progressiveTaxMultiplier;
+
+    const totalTax = flatTax + progressiveTax;
+    const afterTax = Math.floor(winnings - totalTax);
+
+    console.log(`Tax calculation for ${currentUser}: Rank ${rank}/${totalPlayers}, Winnings: ${winnings}, Flat: ${flatTax.toFixed(2)}, Progressive: ${progressiveTax.toFixed(2)}, Total Tax: ${totalTax.toFixed(2)}, After Tax: ${afterTax}`);
+
+    return afterTax;
 }
 
 // Function to get tax breakdown for display
-function getTaxBreakdown(winnings) {
-    if (!TAX_ENABLED || winnings <= 0) return { taxAmount: 0, breakdown: [] };
-    
-    let remainingWinnings = winnings;
-    let totalTax = 0;
-    let breakdown = [];
-    
-    for (let i = 0; i < PROGRESSIVE_TAX_BRACKETS.length; i++) {
-        const currentBracket = PROGRESSIVE_TAX_BRACKETS[i];
-        const nextBracket = PROGRESSIVE_TAX_BRACKETS[i + 1];
-        
-        let taxableInBracket;
-        if (nextBracket) {
-            const bracketMax = nextBracket.threshold;
-            taxableInBracket = Math.min(remainingWinnings, Math.max(0, bracketMax - currentBracket.threshold));
-        } else {
-            taxableInBracket = Math.max(0, remainingWinnings - currentBracket.threshold);
-        }
-        
-        if (taxableInBracket > 0 && winnings > currentBracket.threshold) {
-            const taxInBracket = taxableInBracket * currentBracket.rate;
-            totalTax += taxInBracket;
-            
-            if (taxInBracket > 0.01) { // Only show brackets with meaningful tax
-                breakdown.push({
-                    range: nextBracket ? `${currentBracket.threshold}-${nextBracket.threshold - 1}` : `${currentBracket.threshold}+`,
-                    rate: currentBracket.rate * 100,
-                    amount: Math.floor(taxableInBracket),
-                    tax: Math.floor(taxInBracket)
-                });
-            }
-        }
-    }
-    
-    return { taxAmount: Math.floor(totalTax), breakdown };
-}
+async function getTaxBreakdown(winnings, username = null) {
+    if (winnings <= 0) return { taxAmount: 0, flatTax: 0, progressiveTax: 0, rank: 0, totalPlayers: 0 };
 
-// Function to update tax settings from admin panel
-window.setGlobalTaxSettings = function(brackets, enabled) {
-    PROGRESSIVE_TAX_BRACKETS = brackets || PROGRESSIVE_TAX_BRACKETS;
-    TAX_ENABLED = enabled;
-};
+    const currentUser = username || RainbetUtils.getCurrentUser();
+    const { rank, totalPlayers } = await getLeaderboardPosition(currentUser);
+
+    // Calculate flat tax
+    const flatTax = winnings * FLAT_TAX_RATE;
+
+    // Calculate progressive tax based on leaderboard position
+    const progressiveTaxMultiplier = Math.max(0, totalPlayers - rank) * PROGRESSIVE_TAX_RATE;
+    const progressiveTax = winnings * progressiveTaxMultiplier;
+
+    const totalTax = flatTax + progressiveTax;
+
+    return {
+        taxAmount: Math.floor(totalTax),
+        flatTax: Math.floor(flatTax),
+        progressiveTax: Math.floor(progressiveTax),
+        flatTaxRate: FLAT_TAX_RATE * 100,
+        progressiveTaxRate: progressiveTaxMultiplier * 100,
+        rank,
+        totalPlayers
+    };
+}
 
 // Load tax settings from Firebase
 async function loadTaxSettings() {
     try {
-        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTax');
-        const snapshot = await window.firebaseGet(taxRef);
-        
-        if (snapshot.exists()) {
-            const settings = snapshot.val();
-            PROGRESSIVE_TAX_BRACKETS = settings.brackets || PROGRESSIVE_TAX_BRACKETS;
-            TAX_ENABLED = settings.enabled !== undefined ? settings.enabled : true;
+        // Load flat tax rate
+        const flatTaxRef = window.firebaseRef(window.firebaseDb, 'economySettings/flatTax');
+        const flatTaxSnapshot = await window.firebaseGet(flatTaxRef);
+        if (flatTaxSnapshot.exists()) {
+            FLAT_TAX_RATE = flatTaxSnapshot.val() / 100; // Convert percentage to decimal
         }
+
+        // Load progressive tax rate
+        const progressiveTaxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTaxRate');
+        const progressiveTaxSnapshot = await window.firebaseGet(progressiveTaxRef);
+        if (progressiveTaxSnapshot.exists()) {
+            PROGRESSIVE_TAX_RATE = progressiveTaxSnapshot.val() / 100; // Convert percentage to decimal
+        }
+
+        console.log(`Loaded tax settings: Flat Tax: ${FLAT_TAX_RATE * 100}%, Progressive Tax Rate: ${PROGRESSIVE_TAX_RATE * 100}%`);
     } catch (error) {
         console.error('Error loading tax settings:', error);
     }
@@ -1111,37 +1113,42 @@ async function showGameResult(won, betAmount, multiplier, message) {
     // SECURITY: Always unlock bet amount when game ends
     unlockBetAmount();
     gameInProgress = false;
-    
+
     const resultDiv = document.getElementById('gameResult');
     const resultClass = won ? 'win' : 'lose';
     const resultText = won ? 'YOU WON!' : 'YOU LOST!';
     let pointsText = '';
-    
+
     if (won && multiplier > 0) {
         const rawWinnings = Math.floor(betAmount * multiplier);
-        const taxedWinnings = applyTax(rawWinnings);
-        const taxAmount = rawWinnings - taxedWinnings;
+        const taxBreakdown = await getTaxBreakdown(rawWinnings);
+        const finalWinnings = rawWinnings - taxBreakdown.flatTax - taxBreakdown.progressiveTax;
 
         // Calculate net profit (what they actually won above their bet)
-        const netProfit = taxedWinnings - betAmount;
+        const netProfit = finalWinnings - betAmount;
         const grossProfit = rawWinnings - betAmount;
 
-        RainbetUtils.awardPoints(taxedWinnings);
+        RainbetUtils.awardPoints(finalWinnings);
 
-        if (taxAmount > 0) {
-            const taxBreakdown = getTaxBreakdown(rawWinnings);
-            const effectiveRate = ((taxAmount / rawWinnings) * 100).toFixed(1);
-            pointsText = `You won ${grossProfit} points! (${netProfit} after ${taxAmount} tax @ ${effectiveRate}%)`;
+        // Create detailed tax breakdown display
+        const totalTax = taxBreakdown.flatTax + taxBreakdown.progressiveTax;
+        if (totalTax > 0) {
+            pointsText = `
+                Original earnings: ${grossProfit} credits<br>
+                Flat tax (${taxBreakdown.flatRate}%): -${taxBreakdown.flatTax} credits<br>
+                Progressive tax (${taxBreakdown.progressiveRate}%): -${taxBreakdown.progressiveTax} credits<br>
+                <strong>Final earnings: ${netProfit} credits</strong>
+            `;
         } else {
-            pointsText = 'You won ' + netProfit + ' points!';
+            pointsText = 'You won ' + netProfit + ' credits!';
         }
 
         await updateUserPoints();
         await updateLeaderboard();
-        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${netProfit} points playing ${currentGame}!`);
+        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${netProfit} credits playing ${currentGame}!`);
     } else {
-        pointsText = `You lost your bet: ${betAmount} points`;
-        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} lost ${betAmount} points playing ${currentGame}.`);
+        pointsText = `You lost your bet: ${betAmount} credits`;
+        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} lost ${betAmount} credits playing ${currentGame}.`);
     }
     
     resultDiv.innerHTML = `

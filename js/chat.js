@@ -2019,18 +2019,33 @@ async function updateBettingLimits() {
     }
 }
 
-async function updateHouseEdge() {
+async function updateFlatTax() {
     try {
-        const houseEdge = parseFloat(document.getElementById('houseEdge').value);
-        const edgeRef = window.firebaseRef(window.firebaseDb, 'economySettings/houseEdge');
-        await window.firebaseSet(edgeRef, houseEdge);
-        
-        await RainbetUtils.addSystemMessage(`📈 Admin set house edge to ${houseEdge}%`);
-        logSecurityEvent('HOUSE_EDGE_UPDATED', RainbetUtils.getCurrentUser(), `New edge: ${houseEdge}%`);
-        alert('House edge updated successfully!');
+        const flatTax = parseFloat(document.getElementById('flatTax').value);
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/flatTax');
+        await window.firebaseSet(taxRef, flatTax);
+
+        await RainbetUtils.addSystemMessage(`💰 Admin set flat tax to ${flatTax}%`);
+        logSecurityEvent('FLAT_TAX_UPDATED', RainbetUtils.getCurrentUser(), `New flat tax: ${flatTax}%`);
+        alert('Flat tax updated successfully!');
     } catch (error) {
-        console.error('Error updating house edge:', error);
-        alert('Error updating house edge');
+        console.error('Error updating flat tax:', error);
+        alert('Error updating flat tax');
+    }
+}
+
+async function updateProgressiveTaxRate() {
+    try {
+        const progressiveTaxRate = parseFloat(document.getElementById('progressiveTaxRate').value);
+        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTaxRate');
+        await window.firebaseSet(taxRef, progressiveTaxRate);
+
+        await RainbetUtils.addSystemMessage(`📊 Admin set progressive tax rate to ${progressiveTaxRate}% per rank`);
+        logSecurityEvent('PROGRESSIVE_TAX_RATE_UPDATED', RainbetUtils.getCurrentUser(), `New rate: ${progressiveTaxRate}%`);
+        alert('Progressive tax rate updated successfully!');
+    } catch (error) {
+        console.error('Error updating progressive tax rate:', error);
+        alert('Error updating progressive tax rate');
     }
 }
 
