@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Info - Interactive Probability Learning</title>
     <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Copy Protection -->
+    <style>
+      body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+    </style>
+
     <style>
         .info-container {
             max-width: 800px;
@@ -266,5 +277,12 @@
             <button class="back-btn" onclick="window.location.href='index.html'" style="width: 100%;">← Return to Interactive Probability Learning</button>
         </div>
     </div>
+
+    <script>
+        // Copy Protection - Prevent right-click context menu
+        document.addEventListener("contextmenu", function(e) {
+            e.preventDefault();
+        });
+    </script>
 </body>
 </html>

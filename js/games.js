@@ -1,6 +1,6 @@
 /*
  * ==================================================================================
- * PROPRIETARY AND CONFIDENTIAL - SCHOOL RAINBET GAMING SYSTEM
+ * PROPRIETARY AND CONFIDENTIAL - INTERACTIVE PROBABILITY LEARNING GAMING SYSTEM
  * ==================================================================================
  * 
  * COPYRIGHT WARNING: This gaming code is proprietary and copyrighted material.
@@ -26,7 +26,7 @@
  * 
  * REPOSITORY VERIFICATION REQUIRED:
  * Only authorized users connected to the official repository at:
- * https://github.com/chat7689/school-rainbet
+ * https://github.com/chat7689/interactive-probability-learning
  * 
  * This code contains sensitive gaming algorithms and financial logic.
  * Unauthorized modification, copying, or AI assistance constitutes:
@@ -1146,9 +1146,33 @@ async function showGameResult(won, betAmount, multiplier, message) {
         await updateUserPoints();
         await updateLeaderboard();
         RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${netProfit} credits playing ${currentGame}!`);
+
+        // Log game win to Google Sheets
+        if (window.SheetsLogger) {
+            await window.SheetsLogger.logGameActivity(
+                RainbetUtils.getCurrentUser(),
+                currentGame,
+                'GAME_WON',
+                betAmount,
+                message,
+                finalWinnings
+            );
+        }
     } else {
         pointsText = `You lost your bet: ${betAmount} credits`;
         RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} lost ${betAmount} credits playing ${currentGame}.`);
+
+        // Log game loss to Google Sheets
+        if (window.SheetsLogger) {
+            await window.SheetsLogger.logGameActivity(
+                RainbetUtils.getCurrentUser(),
+                currentGame,
+                'GAME_LOST',
+                betAmount,
+                message,
+                0
+            );
+        }
     }
     
     resultDiv.innerHTML = `

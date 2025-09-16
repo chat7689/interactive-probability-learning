@@ -1,6 +1,6 @@
 /*
  * ==================================================================================
- * PROPRIETARY AND CONFIDENTIAL - SCHOOL RAINBET PROJECT
+ * PROPRIETARY AND CONFIDENTIAL - INTERACTIVE PROBABILITY LEARNING PROJECT
  * ==================================================================================
  * 
  * COPYRIGHT WARNING: This code is proprietary and copyrighted material.
@@ -26,7 +26,7 @@
  * 
  * REPOSITORY VERIFICATION REQUIRED:
  * Only authorized users connected to the official repository at:
- * https://github.com/chat7689/school-rainbet
+ * https://github.com/chat7689/interactive-probability-learning
  * 
  * Any unauthorized modification, distribution, copying, or assistance with this code
  * constitutes:
@@ -283,7 +283,12 @@ async function login() {
         
         console.log('Login successful, setting user...');
         RainbetUtils.setCurrentUser(username, accountData.isAdmin || false);
-        
+
+        // Log successful login to Google Sheets
+        if (window.SheetsLogger) {
+            await window.SheetsLogger.logUserLogin(username);
+        }
+
         console.log('Entering chat...');
         await enterChat();
         
@@ -1276,6 +1281,7 @@ function openAdmin() {
     // Initialize admin panel data
     refreshQuickStats();
     loadCurrentActivationCode();
+    loadSheetsLoggingSettings();
     initializeAdminCollapsible();
     
     document.getElementById('adminModal').style.setProperty('display', 'block', 'important');
@@ -1312,6 +1318,7 @@ function openAdmin() {
     refreshEconomicStats();
     refreshQuickStats();
     loadCurrentActivationCode();
+    loadSheetsLoggingSettings();
 }
 
 function closeAdmin() {
@@ -1646,6 +1653,11 @@ async function clearAllMessages() {
         // Add system message about clearing
         await RainbetUtils.addSystemMessage('🗑️ Admin cleared all chat messages');
         logSecurityEvent('MESSAGES_CLEARED', RainbetUtils.getCurrentUser(), 'Cleared all chat messages');
+
+        // Log to Google Sheets
+        if (window.SheetsLogger) {
+            await window.SheetsLogger.logAdminAction(RainbetUtils.getCurrentUser(), 'CLEAR_ALL_MESSAGES', 'Cleared all chat messages');
+        }
 
         // Refresh the message display to show the system message
         setTimeout(async () => {
@@ -2151,6 +2163,103 @@ async function redistributeWealth() {
 
 
 
+
+// Google Sheets Logging Configuration Functions
+async function configureSheetsLogging() {
+    const url = document.getElementById('sheetsURL').value.trim();
+    const enabled = document.getElementById('enableSheetsLogging').checked;
+
+    if (!url && enabled) {
+        alert('Please enter a Google Apps Script URL first');
+        return;
+    }
+
+    try {
+        if (window.SheetsLogger) {
+            if (url) {
+                window.SheetsLogger.setURL(url);
+                // Save to Firebase for persistence
+                const settingsRef = window.firebaseRef(window.firebaseDb, 'adminSettings/sheetsLogging');
+                await window.firebaseSet(settingsRef, {
+                    url: url,
+                    enabled: enabled,
+                    configuredBy: RainbetUtils.getCurrentUser(),
+                    configuredAt: new Date().toISOString()
+                });
+            }
+            window.SheetsLogger.setEnabled(enabled);
+
+            document.getElementById('sheetsStatus').textContent = enabled ? '✅ Enabled' : '❌ Disabled';
+            document.getElementById('sheetsStatus').style.color = enabled ? '#27ae60' : '#e74c3c';
+
+            await RainbetUtils.addSystemMessage(`📊 Google Sheets logging ${enabled ? 'enabled' : 'disabled'} by admin`);
+            logSecurityEvent('SHEETS_LOGGING_CONFIGURED', RainbetUtils.getCurrentUser(), `Enabled: ${enabled}, URL: ${url ? 'Set' : 'None'}`);
+
+            alert(`Google Sheets logging ${enabled ? 'enabled' : 'disabled'} successfully!`);
+        }
+    } catch (error) {
+        console.error('Error configuring sheets logging:', error);
+        alert('Error configuring sheets logging: ' + error.message);
+    }
+}
+
+async function testSheetsConnection() {
+    const statusSpan = document.getElementById('sheetsStatus');
+    statusSpan.textContent = '🔄 Testing...';
+    statusSpan.style.color = '#f39c12';
+
+    try {
+        if (window.SheetsLogger && window.SheetsLogger.enabled) {
+            // Send a test log entry
+            await window.SheetsLogger.logToSheets({
+                type: 'CONNECTION_TEST',
+                timestamp: new Date().toISOString(),
+                username: RainbetUtils.getCurrentUser(),
+                message: 'Testing Google Sheets connection from admin panel',
+                testId: Math.random().toString(36).substr(2, 9)
+            });
+
+            statusSpan.textContent = '✅ Connection successful!';
+            statusSpan.style.color = '#27ae60';
+            alert('Test successful! Check your Google Sheet for the test entry.');
+        } else {
+            statusSpan.textContent = '❌ Not configured';
+            statusSpan.style.color = '#e74c3c';
+            alert('Please configure and enable sheets logging first.');
+        }
+    } catch (error) {
+        statusSpan.textContent = '❌ Connection failed';
+        statusSpan.style.color = '#e74c3c';
+        console.error('Sheets connection test failed:', error);
+        alert('Connection test failed. Please check your URL and try again.');
+    }
+}
+
+async function loadSheetsLoggingSettings() {
+    try {
+        const settingsRef = window.firebaseRef(window.firebaseDb, 'adminSettings/sheetsLogging');
+        const snapshot = await window.firebaseGet(settingsRef);
+
+        if (snapshot.exists()) {
+            const settings = snapshot.val();
+            document.getElementById('sheetsURL').value = settings.url || '';
+            document.getElementById('enableSheetsLogging').checked = settings.enabled || false;
+
+            if (window.SheetsLogger) {
+                if (settings.url) {
+                    window.SheetsLogger.setURL(settings.url);
+                }
+                window.SheetsLogger.setEnabled(settings.enabled || false);
+
+                const statusSpan = document.getElementById('sheetsStatus');
+                statusSpan.textContent = settings.enabled ? '✅ Enabled' : '❌ Disabled';
+                statusSpan.style.color = settings.enabled ? '#27ae60' : '#e74c3c';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading sheets logging settings:', error);
+    }
+}
 
 // Admin Panel Collapsible Functionality
 function initializeAdminCollapsible() {

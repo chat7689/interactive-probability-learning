@@ -1,6 +1,6 @@
 /*
  * ==================================================================================
- * PROPRIETARY AND CONFIDENTIAL - SCHOOL RAINBET UTILITIES
+ * PROPRIETARY AND CONFIDENTIAL - INTERACTIVE PROBABILITY LEARNING UTILITIES
  * ==================================================================================
  * 
  * COPYRIGHT WARNING: This utility code is proprietary and copyrighted material.
@@ -15,7 +15,7 @@
  * 
  * REPOSITORY VERIFICATION REQUIRED:
  * Only authorized users connected to the official repository at:
- * https://github.com/chat7689/school-rainbet
+ * https://github.com/chat7689/interactive-probability-learning
  * 
  * This code contains sensitive authentication and user management logic.
  * Unauthorized modification could compromise system security.
@@ -29,7 +29,7 @@
  * ==================================================================================
  */
 
-// Shared utilities for School Rainbet
+// Shared utilities for Interactive Probability Learning
 class RainbetUtils {
     static currentUser = '';
     static isCurrentUserAdmin = false;
@@ -43,7 +43,7 @@ class RainbetUtils {
             if (!settingsSnapshot.exists()) {
                 await window.firebaseSet(settingsRef, {
                     activationCode: 'code',
-                    chatName: 'School Rainbet'
+                    chatName: 'Interactive Probability Learning'
                 });
             }
         } catch (error) {
@@ -66,7 +66,7 @@ class RainbetUtils {
         if (!localStorage.getItem('chat_settings')) {
             localStorage.setItem('chat_settings', JSON.stringify({
                 activationCode: 'code',
-                chatName: 'School Rainbet'
+                chatName: 'Interactive Probability Learning'
             }));
         }
     }
@@ -562,11 +562,11 @@ class RainbetUtils {
             if (snapshot.exists()) {
                 return snapshot.val();
             }
-            return { activationCode: 'code', chatName: 'School Rainbet' };
+            return { activationCode: 'code', chatName: 'Interactive Probability Learning' };
         } catch (error) {
             console.error('Error getting chat settings:', error);
             // Fallback to localStorage
-            return JSON.parse(localStorage.getItem('chat_settings') || '{"activationCode":"code","chatName":"School Rainbet"}');
+            return JSON.parse(localStorage.getItem('chat_settings') || '{"activationCode":"code","chatName":"Interactive Probability Learning"}');
         }
     }
 

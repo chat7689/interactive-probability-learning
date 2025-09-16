@@ -1,6 +1,6 @@
 /*
  * ==================================================================================
- * PROPRIETARY AND CONFIDENTIAL - SCHOOL RAINBET SHOP SYSTEM
+ * PROPRIETARY AND CONFIDENTIAL - INTERACTIVE PROBABILITY LEARNING SHOP SYSTEM
  * ==================================================================================
  * 
  * COPYRIGHT WARNING: This shop code is proprietary and copyrighted material.
@@ -15,7 +15,7 @@
  * 
  * REPOSITORY VERIFICATION REQUIRED:
  * Only authorized users connected to the official repository at:
- * https://github.com/chat7689/school-rainbet
+ * https://github.com/chat7689/interactive-probability-learning
  * 
  * This code contains sensitive financial and transaction logic.
  * Unauthorized modification could violate commercial regulations and copyright law.
