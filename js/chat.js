@@ -1275,7 +1275,6 @@ function openAdmin() {
     
     // Initialize admin panel data
     refreshQuickStats();
-    loadCurrentTaxSettings();
     loadCurrentActivationCode();
     initializeAdminCollapsible();
     
@@ -1312,7 +1311,6 @@ function openAdmin() {
     initializeAdminCollapsible();
     refreshEconomicStats();
     refreshQuickStats();
-    loadCurrentTaxSettings();
     loadCurrentActivationCode();
 }
 
@@ -2151,164 +2149,8 @@ async function redistributeWealth() {
     }
 }
 
-async function updateProgressiveTaxSettings() {
-    try {
-        const taxEnabled = document.getElementById('taxEnabled').checked;
-        
-        // Get simple tax rates
-        const rate1 = parseFloat(document.getElementById('taxRate1').value) || 0;
-        const rate2 = parseFloat(document.getElementById('taxRate2').value) || 0;
-        const rate3 = parseFloat(document.getElementById('taxRate3').value) || 0;
-        
-        // Convert to simple brackets (much easier to understand)
-        const brackets = [
-            { threshold: 0, rate: rate1 / 100 },      // 1-100 points
-            { threshold: 101, rate: rate2 / 100 },    // 101-500 points  
-            { threshold: 501, rate: rate3 / 100 }     // 501+ points
-        ];
-        
-        // Update global variables in games.js
-        if (window.setGlobalTaxSettings) {
-            window.setGlobalTaxSettings(brackets, taxEnabled);
-        }
-        
-        // Save to Firebase for persistence
-        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTax');
-        await window.firebaseSet(taxRef, {
-            brackets: brackets,
-            enabled: taxEnabled
-        });
-        
-        // Update display
-        const maxRate = Math.max(rate1, rate2, rate3);
-        const currentTaxDisplay = document.getElementById('currentTaxRate');
-        if (currentTaxDisplay) {
-            currentTaxDisplay.textContent = taxEnabled ? `${rate1}%/${rate2}%/${rate3}%` : 'Disabled';
-        }
-        
-        await RainbetUtils.addSystemMessage(`💸 Tax updated: Small ${rate1}%, Medium ${rate2}%, Big ${rate3}% (${taxEnabled ? 'enabled' : 'disabled'})`);
-        logSecurityEvent('PROGRESSIVE_TAX_UPDATED', RainbetUtils.getCurrentUser(), `Rates: ${rate1}%/${rate2}%/${rate3}%`);
-        alert(`Tax settings updated!\n\n• Small wins (1-100): ${rate1}%\n• Medium wins (101-500): ${rate2}%\n• Big wins (501+): ${rate3}%\n\nSystem: ${taxEnabled ? 'Enabled' : 'Disabled'}`);
-    } catch (error) {
-        console.error('Error updating progressive tax settings:', error);
-        alert('Error updating progressive tax settings');
-    }
-}
 
-async function previewTaxCalculation() {
-    const testAmount = prompt('Enter winnings amount to preview tax calculation:', '500');
-    if (!testAmount) return;
-    
-    const amount = parseInt(testAmount);
-    if (isNaN(amount) || amount <= 0) {
-        alert('Please enter a valid positive number');
-        return;
-    }
-    
-    // Get current brackets
-    const brackets = [];
-    const bracketElements = document.querySelectorAll('.tax-bracket');
-    bracketElements.forEach(bracket => {
-        const threshold = parseInt(bracket.querySelector('.bracket-threshold').value) || 0;
-        const rate = parseFloat(bracket.querySelector('.bracket-rate').value) / 100 || 0;
-        brackets.push({ threshold, rate });
-    });
-    
-    // Calculate tax manually (same logic as in games.js)
-    let totalTax = 0;
-    let breakdown = [];
-    
-    for (let i = 0; i < brackets.length; i++) {
-        const currentBracket = brackets[i];
-        const nextBracket = brackets[i + 1];
-        
-        let taxableInBracket;
-        if (nextBracket) {
-            const bracketMax = nextBracket.threshold;
-            taxableInBracket = Math.min(amount, Math.max(0, bracketMax - currentBracket.threshold));
-        } else {
-            taxableInBracket = Math.max(0, amount - currentBracket.threshold);
-        }
-        
-        if (taxableInBracket > 0 && amount > currentBracket.threshold) {
-            const taxInBracket = taxableInBracket * currentBracket.rate;
-            totalTax += taxInBracket;
-            
-            if (taxInBracket > 0.01) {
-                breakdown.push({
-                    range: nextBracket ? `${currentBracket.threshold}-${nextBracket.threshold - 1}` : `${currentBracket.threshold}+`,
-                    rate: currentBracket.rate * 100,
-                    amount: Math.floor(taxableInBracket),
-                    tax: Math.floor(taxInBracket)
-                });
-            }
-        }
-    }
-    
-    const afterTax = amount - Math.floor(totalTax);
-    const effectiveRate = ((totalTax / amount) * 100).toFixed(1);
-    
-    let previewText = `Tax Preview for ${amount} points:\n\n`;
-    breakdown.forEach(b => {
-        previewText += `${b.range} points @ ${b.rate}%: ${b.amount} → ${b.tax} tax\n`;
-    });
-    previewText += `\nTotal Tax: ${Math.floor(totalTax)} points (${effectiveRate}%)\n`;
-    previewText += `After Tax: ${afterTax} points`;
-    
-    alert(previewText);
-}
 
-async function loadCurrentTaxSettings() {
-    try {
-        const taxRef = window.firebaseRef(window.firebaseDb, 'economySettings/progressiveTax');
-        const snapshot = await window.firebaseGet(taxRef);
-        
-        if (snapshot.exists()) {
-            const settings = snapshot.val();
-            
-            // Load progressive tax brackets using class selectors
-            const thresholdInputs = document.querySelectorAll('.bracket-threshold');
-            const rateInputs = document.querySelectorAll('.bracket-rate');
-            
-            if (settings.brackets && Array.isArray(settings.brackets)) {
-                settings.brackets.forEach((bracket, index) => {
-                    if (thresholdInputs[index] && rateInputs[index]) {
-                        thresholdInputs[index].value = bracket.threshold || 0;
-                        rateInputs[index].value = Math.round((bracket.rate || 0) * 100);
-                    }
-                });
-            }
-            
-            // Load tax enabled setting
-            document.getElementById('taxEnabled').checked = settings.enabled !== undefined ? settings.enabled : true;
-            
-            // Update current tax status display
-            const statusText = settings.enabled ? 'Progressive Tax Enabled' : 'Tax Disabled';
-            document.getElementById('currentTaxRate').textContent = statusText;
-        } else {
-            // Set default progressive tax brackets if none exist
-            const thresholdInputs = document.querySelectorAll('.bracket-threshold');
-            const rateInputs = document.querySelectorAll('.bracket-rate');
-            
-            const defaultBrackets = [
-                { threshold: 0, rate: 0.00 },
-                { threshold: 50, rate: 0.05 },
-                { threshold: 200, rate: 0.10 },
-                { threshold: 500, rate: 0.15 },
-                { threshold: 1000, rate: 0.20 }
-            ];
-            
-            defaultBrackets.forEach((bracket, index) => {
-                if (thresholdInputs[index] && rateInputs[index]) {
-                    thresholdInputs[index].value = bracket.threshold;
-                    rateInputs[index].value = Math.round(bracket.rate * 100);
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Error loading current tax settings:', error);
-    }
-}
 
 // Admin Panel Collapsible Functionality
 function initializeAdminCollapsible() {

@@ -380,58 +380,6 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
             <div class="admin-section collapsible">
                 <h3>💸 Tax System</h3>
                 <div class="admin-content">
-                    <div class="admin-group">
-                        <h4>📊 Progressive Tax Brackets</h4>
-                        <div style="margin: 10px 0;">
-                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-                            <input type="checkbox" id="taxEnabled" checked>
-                            Enable Progressive Tax System
-                        </label>
-                    </div>
-                    
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                        <h5 style="margin-top: 0; color: #34495e;">Simple Tax Rates (Applied to ALL winnings):</h5>
-                        <div style="display: grid; gap: 15px;">
-                            <div style="background: white; padding: 12px; border-radius: 4px; border-left: 4px solid #27ae60;">
-                                <div style="font-weight: bold; margin-bottom: 5px;">💰 Small Wins (1-100 points)</div>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="number" id="taxRate1" value="0" min="0" max="50" style="width: 60px;">
-                                    <span>% tax</span>
-                                    <span style="color: #666; font-size: 12px;">Example: Win 50 → Keep all 50 points</span>
-                                </div>
-                            </div>
-                            
-                            <div style="background: white; padding: 12px; border-radius: 4px; border-left: 4px solid #f39c12;">
-                                <div style="font-weight: bold; margin-bottom: 5px;">🎯 Medium Wins (101-500 points)</div>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="number" id="taxRate2" value="5" min="0" max="50" style="width: 60px;">
-                                    <span>% tax</span>
-                                    <span style="color: #666; font-size: 12px;">Example: Win 200 → Keep 190, pay 10 tax</span>
-                                </div>
-                            </div>
-                            
-                            <div style="background: white; padding: 12px; border-radius: 4px; border-left: 4px solid #e74c3c;">
-                                <div style="font-weight: bold; margin-bottom: 5px;">🚀 Big Wins (501+ points)</div>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="number" id="taxRate3" value="15" min="0" max="50" style="width: 60px;">
-                                    <span>% tax</span>
-                                    <span style="color: #666; font-size: 12px;">Example: Win 1000 → Keep 850, pay 150 tax</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 15px; padding: 10px; background: #e8f4fd; border-radius: 4px;">
-                            <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">ℹ️ How it works:</div>
-                            <div style="font-size: 13px; color: #555;">
-                                • Tax is only taken from gambling winnings<br>
-                                • Higher winnings = higher tax rate<br>
-                                • Tax goes to server economy pool
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button onclick="updateProgressiveTaxSettings()" style="background: #8e44ad;">Update Progressive Tax</button>
-                    <button onclick="previewTaxCalculation()" style="background: #3498db; margin-left: 10px;">Preview Tax</button>
                 </div>
                 
                 <div style="margin-bottom: 15px;">
@@ -441,7 +389,7 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                         <div>Active Users: <span id="activeUsersCount">Loading...</span></div>
                         <div>Games Played Today: <span id="gamesPlayedToday">Loading...</span></div>
                         <div>House Profit Today: <span id="houseProfitToday">Loading...</span></div>
-                        <div>Current Tax Rate: <span id="currentTaxRate">5%</span></div>
+                        <div>Tax System: <span id="currentTaxRate">Leaderboard-based</span></div>
                     </div>
                     <button onclick="refreshEconomicStats()" style="background: #3498db;">Refresh Stats</button>
                     <button onclick="redistributeWealth()" style="background: #e67e22; margin-left: 10px;">Redistribute Top 10%</button>
