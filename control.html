@@ -324,19 +324,35 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
         async function loadUsers() {
             if (!isAuthenticated) return;
 
+            // Wait for Firebase to be ready
+            let attempts = 0;
+            while (!window.firebaseDb && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+
+            if (!window.firebaseDb) {
+                document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #e74c3c;">Firebase connection failed. Please refresh the page.</p>';
+                return;
+            }
+
             try {
+                console.log('Loading users from Firebase...');
                 const usersRef = window.firebaseRef(window.firebaseDb, 'users');
                 const snapshot = await window.firebaseGet(usersRef);
 
+                console.log('Firebase response received:', snapshot.exists());
+
                 if (snapshot.exists()) {
                     const users = snapshot.val();
+                    console.log('Users data:', Object.keys(users).length, 'users found');
                     displayUsers(users);
                 } else {
-                    document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #bbb;">No users found.</p>';
+                    document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #bbb;">No users found in database.</p>';
                 }
             } catch (error) {
                 console.error('Error loading users:', error);
-                document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #e74c3c;">Error loading users.</p>';
+                document.getElementById('usersList').innerHTML = `<p style="text-align: center; color: #e74c3c;">Error loading users: ${error.message}</p>`;
             }
         }
 
@@ -344,11 +360,29 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
             const usersList = document.getElementById('usersList');
             usersList.innerHTML = '';
 
+            let validUserCount = 0;
+
             for (const [username, userData] of Object.entries(users)) {
-                // Filter out API keys and suspicious entries
-                if (username.length > 20 || username.includes('AIza') || username.includes('firebase')) {
+                // Enhanced filtering for API keys and suspicious entries
+                const usernameStr = String(username);
+                const isApiKey = usernameStr.length > 20 ||
+                    usernameStr.includes('AIza') ||
+                    usernameStr.includes('firebase') ||
+                    usernameStr.includes('api') ||
+                    usernameStr.includes('key') ||
+                    (usernameStr.includes('-') && usernameStr.length > 25);
+
+                if (isApiKey) {
+                    console.log('Filtered out suspicious entry:', usernameStr.substring(0, 10) + '...');
                     continue;
                 }
+
+                // Skip if userData is not a proper object
+                if (!userData || typeof userData !== 'object') {
+                    continue;
+                }
+
+                validUserCount++;
 
                 const userItem = document.createElement('div');
                 userItem.className = 'user-item';
@@ -357,16 +391,22 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
 
                 userItem.innerHTML = `
                     <div class="user-info">
-                        <div class="username">${isAdmin ? '👑' : '👤'} ${username}</div>
+                        <div class="username">${isAdmin ? '👑' : '👤'} ${usernameStr}</div>
                         <div class="user-stats">Points: ${userData.points || 0} | Joined: ${userData.joinDate || 'Unknown'}</div>
                     </div>
-                    <div class="admin-toggle ${isAdmin ? 'active' : ''}" onclick="toggleAdmin('${username}', ${!isAdmin})">
+                    <div class="admin-toggle ${isAdmin ? 'active' : ''}" onclick="toggleAdmin('${usernameStr}', ${!isAdmin})">
                         <div class="toggle-slider"></div>
                     </div>
                 `;
 
                 usersList.appendChild(userItem);
             }
+
+            if (validUserCount === 0) {
+                usersList.innerHTML = '<p style="text-align: center; color: #bbb;">No valid users found.</p>';
+            }
+
+            console.log(`Displayed ${validUserCount} valid users`);
         }
 
         // Toggle admin status
