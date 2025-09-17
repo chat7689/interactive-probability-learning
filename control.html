@@ -1,0 +1,419 @@
+<!--
+==================================================================================
+RESTRICTED ACCESS CONTROL PANEL - AUTHORIZED PERSONNEL ONLY
+==================================================================================
+
+⚠️ WARNING: UNAUTHORIZED ACCESS IS STRICTLY PROHIBITED ⚠️
+
+This is a restricted administrative control panel for the Interactive Probability
+Learning system. Access to this page requires proper authorization and is logged
+for security purposes.
+
+REPOSITORY VERIFICATION REQUIRED:
+Only authorized users connected to the official repository at:
+https://github.com/chat7689/interactive-probability-learning
+
+PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
+==================================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>System Control Panel</title>
+    <link rel="stylesheet" href="css/styles.css?v=2025-control">
+
+    <!-- Copy Protection -->
+    <style>
+      body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+        color: #fff;
+      }
+
+      .control-container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+      }
+
+      .auth-screen {
+        text-align: center;
+        padding: 50px 20px;
+      }
+
+      .auth-screen h1 {
+        color: #e74c3c;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .passcode-input {
+        padding: 15px 20px;
+        font-size: 18px;
+        border: 2px solid #555;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+        margin: 20px 10px;
+        width: 300px;
+        text-align: center;
+      }
+
+      .auth-btn {
+        padding: 15px 30px;
+        font-size: 16px;
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .auth-btn:hover {
+        background: linear-gradient(135deg, #c0392b, #a93226);
+        transform: translateY(-2px);
+      }
+
+      .admin-panel {
+        display: none;
+      }
+
+      .admin-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .user-list {
+        display: grid;
+        gap: 15px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+      }
+
+      .user-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .user-info {
+        flex-grow: 1;
+      }
+
+      .username {
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .user-stats {
+        font-size: 12px;
+        color: #bbb;
+        margin-top: 5px;
+      }
+
+      .admin-toggle {
+        position: relative;
+        width: 60px;
+        height: 30px;
+        background: #555;
+        border-radius: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .admin-toggle.active {
+        background: #27ae60;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 24px;
+        height: 24px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+      }
+
+      .admin-toggle.active .toggle-slider {
+        left: 33px;
+      }
+
+      .back-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        padding: 10px 20px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .error-msg {
+        color: #e74c3c;
+        margin-top: 15px;
+        font-weight: bold;
+      }
+
+      .warning-banner {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 20px;
+        border-radius: 10px;
+      }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back to Chat</a>
+
+    <div class="control-container">
+        <!-- Authentication Screen -->
+        <div id="authScreen" class="auth-screen">
+            <div class="warning-banner">
+                🔒 RESTRICTED ACCESS - AUTHORIZATION REQUIRED
+            </div>
+            <h1>🛡️ System Control Panel</h1>
+            <p>This is a restricted administrative interface.</p>
+            <p>Enter the authorization passcode to continue:</p>
+
+            <div>
+                <input type="password" id="passcodeInput" class="passcode-input" placeholder="Enter Passcode" maxlength="50">
+                <br>
+                <button onclick="authenticate()" class="auth-btn">🔓 Authenticate</button>
+            </div>
+            <div id="errorMsg" class="error-msg"></div>
+        </div>
+
+        <!-- Admin Panel (Hidden by default) -->
+        <div id="adminPanel" class="admin-panel">
+            <div class="admin-header">
+                <h1>👑 Administrative Control Panel</h1>
+                <p>Manage user privileges and system access</p>
+                <button onclick="logout()" class="auth-btn">🚪 Logout</button>
+            </div>
+
+            <div id="usersList" class="user-list">
+                <p style="text-align: center; color: #bbb;">Loading users...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Configuration -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getDatabase, ref, get, set, serverTimestamp, push, update } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGpAhEzVJKVQfm5BzWOqJZ4R-LZxOk9rQ",
+            authDomain: "rainbet-ea0b5.firebaseapp.com",
+            databaseURL: "https://rainbet-ea0b5-default-rtdb.firebaseio.com",
+            projectId: "rainbet-ea0b5",
+            storageBucket: "rainbet-ea0b5.appspot.com",
+            messagingSenderId: "590076544",
+            appId: "1:590076544:web:f5f8c8e8d5d2b6b4b5e8f5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase();
+
+        // Make Firebase functions globally available
+        window.firebaseDb = db;
+        window.firebaseRef = ref;
+        window.firebaseGet = get;
+        window.firebaseSet = set;
+        window.firebaseUpdate = update;
+        window.firebasePush = push;
+        window.firebaseServerTimestamp = serverTimestamp;
+    </script>
+
+    <script>
+        // Copy protection
+        document.addEventListener("contextmenu", function(e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener("keydown", function(e) {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+            }
+            if (e.key === 'F12') {
+                e.preventDefault();
+            }
+        });
+
+        // Authentication system
+        const CORRECT_PASSCODE = "At7lant7a";
+        let isAuthenticated = false;
+
+        function authenticate() {
+            const enteredCode = document.getElementById('passcodeInput').value;
+            const errorDiv = document.getElementById('errorMsg');
+
+            if (enteredCode === CORRECT_PASSCODE) {
+                isAuthenticated = true;
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                loadUsers();
+                logAccess('SUCCESSFUL_AUTH');
+            } else {
+                errorDiv.textContent = '❌ Invalid passcode. Access denied.';
+                logAccess('FAILED_AUTH_ATTEMPT');
+                // Clear the input
+                document.getElementById('passcodeInput').value = '';
+            }
+        }
+
+        function logout() {
+            isAuthenticated = false;
+            document.getElementById('authScreen').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('passcodeInput').value = '';
+            document.getElementById('errorMsg').textContent = '';
+            logAccess('LOGOUT');
+        }
+
+        // Log access attempts for security
+        async function logAccess(action) {
+            try {
+                const securityRef = window.firebaseRef(window.firebaseDb, 'security_logs');
+                await window.firebasePush(securityRef, {
+                    action: action,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    ip: 'unknown'
+                });
+            } catch (error) {
+                console.error('Failed to log security event:', error);
+            }
+        }
+
+        // Load and display users
+        async function loadUsers() {
+            if (!isAuthenticated) return;
+
+            try {
+                const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+                const snapshot = await window.firebaseGet(usersRef);
+
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    displayUsers(users);
+                } else {
+                    document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #bbb;">No users found.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #e74c3c;">Error loading users.</p>';
+            }
+        }
+
+        function displayUsers(users) {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = '';
+
+            for (const [username, userData] of Object.entries(users)) {
+                // Filter out API keys and suspicious entries
+                if (username.length > 20 || username.includes('AIza') || username.includes('firebase')) {
+                    continue;
+                }
+
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+
+                const isAdmin = userData.isAdmin === true || userData.adminVerified === true;
+
+                userItem.innerHTML = `
+                    <div class="user-info">
+                        <div class="username">${isAdmin ? '👑' : '👤'} ${username}</div>
+                        <div class="user-stats">Points: ${userData.points || 0} | Joined: ${userData.joinDate || 'Unknown'}</div>
+                    </div>
+                    <div class="admin-toggle ${isAdmin ? 'active' : ''}" onclick="toggleAdmin('${username}', ${!isAdmin})">
+                        <div class="toggle-slider"></div>
+                    </div>
+                `;
+
+                usersList.appendChild(userItem);
+            }
+        }
+
+        // Toggle admin status
+        async function toggleAdmin(username, makeAdmin) {
+            if (!isAuthenticated) return;
+
+            try {
+                const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
+                await window.firebaseUpdate(userRef, {
+                    isAdmin: makeAdmin,
+                    adminVerified: makeAdmin
+                });
+
+                // Log the admin change
+                const securityRef = window.firebaseRef(window.firebaseDb, 'security_logs');
+                await window.firebasePush(securityRef, {
+                    action: makeAdmin ? 'ADMIN_GRANTED' : 'ADMIN_REMOVED',
+                    target: username,
+                    timestamp: new Date().toISOString(),
+                    source: 'CONTROL_PANEL'
+                });
+
+                // Reload users to update display
+                loadUsers();
+
+            } catch (error) {
+                console.error('Error updating admin status:', error);
+                alert('Error updating admin status');
+            }
+        }
+
+        // Allow Enter key for authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('passcodeInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    authenticate();
+                }
+            });
+        });
+
+        // Security: Require re-authentication every 30 minutes
+        setTimeout(() => {
+            if (isAuthenticated) {
+                logout();
+                alert('Session expired. Please re-authenticate.');
+            }
+        }, 30 * 60 * 1000);
+    </script>
+</body>
+</html>

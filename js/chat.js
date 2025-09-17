@@ -505,6 +505,13 @@ async function sendMessage() {
         messageInput.value = '';
         return;
     }
+
+    // Secret control page command - not documented in help
+    if (message === '/controlpage') {
+        window.location.href = 'control.html';
+        messageInput.value = '';
+        return;
+    }
     
     if (message === '/help') {
         const helpText = `
