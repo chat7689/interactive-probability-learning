@@ -2518,25 +2518,31 @@ async function showVerifiedAdmins() {
             const users = snapshot.val();
             const verifiedAdmins = [];
 
-            for (const [username, data] of Object.entries(users)) {
-                if (data.isAdmin === true || data.adminVerified === true) {
-                    verifiedAdmins.push(`👑 ${username} (Admin)`);
+            // Safely iterate through users without exposing sensitive data
+            for (const username in users) {
+                const userData = users[username];
+                // Only check admin status - no other data processing
+                if (userData && typeof userData === 'object' &&
+                    (userData.isAdmin === true || userData.adminVerified === true)) {
+                    // Only store the username string - nothing else
+                    verifiedAdmins.push(`👑 ${String(username)}`);
                 }
             }
 
             if (verifiedAdmins.length > 0) {
+                // Create safe message with only usernames
                 const adminList = `🔐 Current Admins:\n${verifiedAdmins.join('\n')}`;
                 await RainbetUtils.addSystemMessage(adminList);
             } else {
                 await RainbetUtils.addSystemMessage('No verified admins found.');
             }
 
-            logSecurityEvent('ADMIN_COMMAND_SUCCESS', RainbetUtils.getCurrentUser(), '/admin (who)');
+            await logSecurityEvent('ADMIN_COMMAND_SUCCESS', RainbetUtils.getCurrentUser(), '/admin (who)');
         } else {
             await RainbetUtils.addSystemMessage('No user accounts found.');
         }
     } catch (error) {
-        console.error('Error fetching verified admins:', error);
+        console.error('Error in showVerifiedAdmins:', error.message);
         await RainbetUtils.addSystemMessage('Error retrieving admin list.');
     }
 }
