@@ -235,15 +235,16 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
         import { getDatabase, ref, get, set, serverTimestamp, push, update } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js';
 
-        // Firebase configuration
+        // Firebase configuration - using correct project config
         const firebaseConfig = {
-            apiKey: "AIzaSyDGpAhEzVJKVQfm5BzWOqJZ4R-LZxOk9rQ",
-            authDomain: "rainbet-ea0b5.firebaseapp.com",
-            databaseURL: "https://rainbet-ea0b5-default-rtdb.firebaseio.com",
-            projectId: "rainbet-ea0b5",
-            storageBucket: "rainbet-ea0b5.appspot.com",
-            messagingSenderId: "590076544",
-            appId: "1:590076544:web:f5f8c8e8d5d2b6b4b5e8f5"
+            apiKey: "AIzaSyAyCOxYlNRn-tveI9G22BHYI8EEpMAEWEI",
+            authDomain: "schoolchat-60b44.firebaseapp.com",
+            databaseURL: "https://schoolchat-60b44-default-rtdb.firebaseio.com",
+            projectId: "schoolchat-60b44",
+            storageBucket: "schoolchat-60b44.firebasestorage.app",
+            messagingSenderId: "209703349541",
+            appId: "1:209703349541:web:d89ba692f5f5c322503ecc",
+            measurementId: "G-S6VLMJHKFF"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -286,7 +287,12 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 isAuthenticated = true;
                 document.getElementById('authScreen').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
-                loadUsers();
+
+                // Show loading message immediately
+                document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #fff;">🔄 Connecting to database...</p>';
+
+                // Load users with a small delay to ensure DOM is ready
+                setTimeout(loadUsers, 500);
                 logAccess('SUCCESSFUL_AUTH');
             } else {
                 errorDiv.textContent = '❌ Invalid passcode. Access denied.';

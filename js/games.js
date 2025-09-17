@@ -2053,6 +2053,9 @@ function updateGameCardState(card, isEnabled) {
     }
 }
 
+// Make showGame globally accessible
+window.showGame = showGame;
+
 // Initialize games page
 document.addEventListener('DOMContentLoaded', async () => {
     if (!RainbetUtils.requireAuth()) return;
