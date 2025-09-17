@@ -80,25 +80,28 @@ function unlockBetAmount() {
     }
 }
 
-// Game balance constants - All games target 95% RTP (5% house edge)
+// Game balance constants - All games target 100% RTP (1:1 ratio before tax)
 const GAMES_CONFIG = {
-    coinflip: { multiplier: 1.90, winChance: 0.5 }, // 50% × 1.90 = 95% RTP
-    dice: { 
-        low: { multiplier: 2.28, minSum: 2, maxSum: 6 },    // 15/36 × 2.28 = 95% RTP
-        mid: { multiplier: 6.84, minSum: 7, maxSum: 8 },    // 5/36 × 6.84 = 95% RTP  
-        high: { multiplier: 2.28, minSum: 9, maxSum: 12 }   // 15/36 × 2.28 = 95% RTP
+    coinflip: { multiplier: 2.0, winChance: 0.5 }, // 50% × 2.0 = 100% RTP
+    dice: {
+        low: { multiplier: 2.4, minSum: 2, maxSum: 6 },    // 15/36 × 2.4 = 100% RTP
+        mid: { multiplier: 7.2, minSum: 7, maxSum: 8 },    // 5/36 × 7.2 = 100% RTP
+        high: { multiplier: 2.4, minSum: 9, maxSum: 12 }   // 15/36 × 2.4 = 100% RTP
     },
-    cups: { multiplier: 2.85, winChance: 1/3 }, // 33.33% × 2.85 = 95% RTP
+    cups: { multiplier: 3.0, winChance: 1/3 }, // 33.33% × 3.0 = 100% RTP
     slots: {
-        multipliers: { '🍒': 3.8, '🍋': 7.6, '🍇': 11.4, '💎': 38 } // Balanced for 95% RTP
+        // 3 matching symbols - balanced for 100% RTP with both 2 and 3 match possibilities
+        threeMatch: { '🍒': 5.26, '🍋': 10.5, '🍇': 15.8, '💎': 52.6 },
+        // 2 matching symbols
+        twoMatch: { '🍒': 1.58, '🍋': 2.1, '🍇': 2.63, '💎': 5.26 }
     },
-    blackjack: { multiplier: 2.05 }, // ~46% win rate × 2.05 = ~94% RTP
+    blackjack: { multiplier: 2.17 }, // ~46% win rate × 2.17 = ~100% RTP
     lottery: {
-        exact3: { multiplier: 95, winChance: 1/1000 },   // 0.1% × 95 = 9.5% of RTP
-        exact2: { multiplier: 9.5, winChance: 30/1000 }, // 3% × 9.5 = 28.5% of RTP
-        exact1: { multiplier: 1.9, winChance: 300/1000 } // 30% × 1.9 = 57% of RTP = 95% total
+        exact3: { multiplier: 100, winChance: 1/1000 },   // 0.1% × 100 = 10% of RTP
+        exact2: { multiplier: 10, winChance: 30/1000 }, // 3% × 10 = 30% of RTP
+        exact1: { multiplier: 2.0, winChance: 300/1000 } // 30% × 2.0 = 60% of RTP = 100% total
     },
-    mines: { baseMultiplier: 1.18 }, // Progressive system balanced for 95% RTP
+    mines: { baseMultiplier: 1.24 }, // Progressive system balanced for 100% RTP
     
     // New games balance
     memory: { baseMultiplier: 2.0, maxLevel: 5 }, // Progressive difficulty
@@ -107,9 +110,9 @@ const GAMES_CONFIG = {
         flush: 4, straight: 3, threeKind: 2.5, twoPair: 2, pair: 1.5, highCard: 0
     },
     reaction: { multiplier: 1.9 }, // Skill-based
-    roulette: { 
-        number: 36, red: 1.9, black: 1.9, odd: 1.9, even: 1.9,
-        low: 1.9, high: 1.9, dozen: 2.85, column: 2.85
+    roulette: {
+        number: 37, red: 2.0, black: 2.0, odd: 2.0, even: 2.0,
+        low: 2.0, high: 2.0, dozen: 3.0, column: 3.0
     },
     crash: { averageMultiplier: 2.0 } // Dynamic system
 };
@@ -480,7 +483,8 @@ function setupSlots(container) {
         </div>
         <button class="game-btn" id="spinSlotsBtn" onclick="spinSlots()">Spin Reels</button>
         <p style="font-size: 11px; color: #666; margin-top: 8px;">
-            🍒🍒🍒 = 5x | 🍋🍋🍋 = 10x | 🍇🍇🍇 = 15x | 💎💎💎 = 50x
+            3 Match: 🍒🍒🍒=5x 🍋🍋🍋=10x 🍇🍇🍇=15x 💎💎💎=50x<br>
+            2 Match: 🍒🍒=1.5x 🍋🍋=2x 🍇🍇=2.5x 💎💎=5x
         </p>
     `;
 }
@@ -506,10 +510,16 @@ async function spinSlots() {
     
     let won = false;
     let multiplier = 1;
-    
+
     if (reel1 === reel2 && reel2 === reel3) {
+        // All 3 match - biggest payout
         won = true;
-        multiplier = GAMES_CONFIG.slots.multipliers[reel1] || 3;
+        multiplier = GAMES_CONFIG.slots.threeMatch[reel1] || 5;
+    } else if (reel1 === reel2 || reel2 === reel3 || reel1 === reel3) {
+        // 2 match - smaller payout
+        won = true;
+        const matchingSymbol = reel1 === reel2 ? reel1 : (reel2 === reel3 ? reel2 : reel1);
+        multiplier = GAMES_CONFIG.slots.twoMatch[matchingSymbol] || 1.5;
     }
     
     showGameResult(won, betAmount, multiplier, 'Reels: ' + reel1 + ' ' + reel2 + ' ' + reel3);
@@ -1135,8 +1145,8 @@ async function showGameResult(won, betAmount, multiplier, message) {
         if (totalTax > 0) {
             pointsText = `
                 Original earnings: ${grossProfit} credits<br>
-                Flat tax (${taxBreakdown.flatRate}%): -${taxBreakdown.flatTax} credits<br>
-                Progressive tax (${taxBreakdown.progressiveRate}%): -${taxBreakdown.progressiveTax} credits<br>
+                Flat tax (${taxBreakdown.flatTaxRate.toFixed(1)}%): -${taxBreakdown.flatTax} credits<br>
+                Progressive tax (${taxBreakdown.progressiveTaxRate.toFixed(1)}%): -${taxBreakdown.progressiveTax} credits<br>
                 <strong>Final earnings: ${netProfit} credits</strong>
             `;
         } else {
@@ -1272,12 +1282,15 @@ window.goBack = goBack;
 function setupMemory(container) {
     container.innerHTML = `
         <h3>🧠 Memory Match - Level 1</h3>
-        <p>Remember the sequence and repeat it!</p>
+        <p>Remember the sequence and repeat it! Earn 1 credit per level completed.</p>
         <div id="memoryBoard" class="memory-board"></div>
         <div id="memoryControls" style="margin: 20px 0;">
             <button class="game-btn" onclick="startMemoryGame()" id="memoryStartBtn">Start Game</button>
         </div>
         <div id="memoryStatus"></div>
+        <p style="font-size: 11px; color: #666; margin-top: 8px;">
+            💡 Earn 1 credit for each level you complete, even if you fail later!
+        </p>
     `;
 }
 
@@ -1338,7 +1351,7 @@ function showMemorySequence() {
 }
 
 function memoryTileClick(index) {
-    if (memoryShowingSequence || gameInProgress) return;
+    if (memoryShowingSequence || !gameInProgress) return;
     
     playerSequence.push(index);
     const tile = document.getElementById('memoryBoard').children[index];
@@ -1347,23 +1360,34 @@ function memoryTileClick(index) {
     
     const currentIndex = playerSequence.length - 1;
     if (playerSequence[currentIndex] !== memorySequence[currentIndex]) {
-        // Wrong sequence
+        // Wrong sequence - but award credits for completed levels
         const betAmount = parseInt(document.getElementById('betAmount').value);
-        showGameResult(false, 'Wrong sequence!', `You reached level ${memoryLevel}`, 1);
+        const creditsEarned = Math.max(0, memoryLevel - 1); // 1 credit per completed level
+        if (creditsEarned > 0) {
+            RainbetUtils.awardPoints(creditsEarned);
+            showGameResult(true, betAmount, 1, `Wrong sequence! But you earned ${creditsEarned} credits for reaching level ${memoryLevel}`);
+        } else {
+            showGameResult(false, betAmount, 1, `Wrong sequence! You reached level ${memoryLevel}`);
+        }
+        gameInProgress = false;
         return;
     }
     
     if (playerSequence.length === memorySequence.length) {
         // Sequence completed correctly
         if (memoryLevel >= 5) {
-            // Won the game!
+            // Won the game! Award credits for all 5 levels completed
             const betAmount = parseInt(document.getElementById('betAmount').value);
-            const multiplier = 2 + (memoryLevel * 0.5);
-            showGameResult(true, 'Perfect memory!', `Completed all 5 levels!`, multiplier);
+            const totalCredits = 5; // 5 credits for completing all levels
+            RainbetUtils.awardPoints(totalCredits);
+            showGameResult(true, betAmount, 1, `Perfect memory! Completed all 5 levels and earned ${totalCredits} credits!`);
+            gameInProgress = false;
         } else {
-            // Next level
+            // Next level - award 1 credit for this completed level
+            RainbetUtils.awardPoints(1);
             memoryLevel++;
-            setTimeout(() => nextMemoryLevel(), 1000);
+            document.getElementById('memoryStatus').innerHTML = `Level ${memoryLevel - 1} complete! +1 credit. Starting level ${memoryLevel}...`;
+            setTimeout(() => nextMemoryLevel(), 1500);
         }
     }
 }
@@ -1608,7 +1632,7 @@ function setupRoulette(container) {
             <div style="margin-top: 10px;">
                 <label>Or bet on number (0-36): </label>
                 <input type="number" id="rouletteNumber" min="0" max="36" placeholder="Number">
-                <button onclick="setRouletteBet('number')" class="bet-btn">Bet Number (35x)</button>
+                <button onclick="setRouletteBet('number')" class="bet-btn">Bet Number (37x)</button>
             </div>
         </div>
         <button class="game-btn" onclick="spinRoulette()" id="spinBtn" disabled>Spin Wheel</button>
@@ -1657,20 +1681,20 @@ function spinRoulette() {
     
     if (rouletteBetType === 'red' && isRed) {
         won = true;
-        multiplier = 2;
+        multiplier = GAMES_CONFIG.roulette.red;
     } else if (rouletteBetType === 'black' && isBlack) {
         won = true;
-        multiplier = 2;
+        multiplier = GAMES_CONFIG.roulette.black;
     } else if (rouletteBetType === 'green' && result === 0) {
         won = true;
-        multiplier = 14;
+        multiplier = 14; // Keep green at 14x for balance
     } else if (rouletteBetType === 'number' && rouletteBet === result) {
         won = true;
-        multiplier = 35;
+        multiplier = GAMES_CONFIG.roulette.number;
     }
     
     const color = result === 0 ? '🟢' : (isRed ? '🔴' : '⚫');
-    showGameResult(won, won ? 'Winner!' : 'Try Again!', `Ball landed on ${color} ${result}`, multiplier);
+    showGameResult(won, betAmount, multiplier, `Ball landed on ${color} ${result}`);
     
     gameInProgress = false;
     rouletteBet = null;

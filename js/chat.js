@@ -521,6 +521,7 @@ async function sendMessage() {
 • /give <username> <amount> - Give points to another user
 • /admin (set) - Request admin status
 • /admin (who) - List verified admins (admin only)
+• /set <username> normal - Remove admin status (admin only)
 • /adminpanel - Open admin panel (admin only)
 • /security log - View security logs (admin only)
 
@@ -726,7 +727,54 @@ async function sendMessage() {
         messageInput.value = '';
         return;
     }
-    
+
+    // Admin command to remove admin status
+    if (message.startsWith('/set ') && message.endsWith(' normal')) {
+        // Only admins can use this command
+        if (!RainbetUtils.isCurrentUserAdmin) {
+            await RainbetUtils.addSystemMessage('You must be admin to use /set command');
+            messageInput.value = '';
+            return;
+        }
+
+        const parts = message.split(' ');
+        if (parts.length !== 3 || parts[2] !== 'normal') {
+            await RainbetUtils.addSystemMessage('Usage: /set <username> normal');
+            messageInput.value = '';
+            return;
+        }
+
+        const targetUsername = parts[1];
+
+        try {
+            // Check if target user exists
+            const targetUserRef = window.firebaseRef(window.firebaseDb, `users/${targetUsername}`);
+            const targetSnapshot = await window.firebaseGet(targetUserRef);
+            if (!targetSnapshot.exists()) {
+                await RainbetUtils.addSystemMessage(`User "${targetUsername}" not found.`);
+                messageInput.value = '';
+                return;
+            }
+
+            // Remove admin status
+            const userRef = window.firebaseRef(window.firebaseDb, `users/${targetUsername}`);
+            await window.firebaseUpdate(userRef, {
+                isAdmin: false,
+                adminVerified: false
+            });
+
+            await RainbetUtils.addSystemMessage(`${targetUsername} has been set to normal user (admin rights removed).`);
+            logSecurityEvent('ADMIN_REMOVED', RainbetUtils.getCurrentUser(), `Removed admin from ${targetUsername}`);
+
+        } catch (error) {
+            console.error('Error setting user to normal:', error);
+            await RainbetUtils.addSystemMessage('Failed to update user status.');
+        }
+
+        messageInput.value = '';
+        return;
+    }
+
     if (message === '/shop') {
         navigateToShop();
         messageInput.value = '';
@@ -943,9 +991,12 @@ async function displayMessages(forceRefresh = false) {
                 const timestamp = msg.timestamp || Date.now();
                 const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
                 console.log('Time string:', timeStr);
-                
+
+                // Add medal for top 3 leaderboard positions
+                const userWithMedal = await addLeaderboardMedal(msg.username);
+
                 messageDiv.innerHTML = `<div class="message-header">
-                    <span class="message-user">${RainbetUtils.escapeHtml(msg.username)}</span>
+                    <span class="message-user">${RainbetUtils.escapeHtml(userWithMedal)}</span>
                     <span class="message-time">${timeStr}</span>
                 </div>
                 <div class="message-content">${RainbetUtils.escapeHtml(msg.message)}</div>`;
@@ -1029,7 +1080,7 @@ function applyMessageStyles(messageDiv, items) {
 
 function getUserDisplayName(username, items) {
     const now = Date.now();
-    
+
     if (items.vip_badge && items.vip_badge > (now - (24 * 60 * 60 * 1000))) {
         return '👑 ' + username;
     } else if (items.winner_badge && items.winner_badge > (now - (12 * 60 * 60 * 1000))) {
@@ -1037,8 +1088,69 @@ function getUserDisplayName(username, items) {
     } else if (items.theater_mask && items.theater_mask > (now - (8 * 60 * 60 * 1000))) {
         return '🎭 ' + username;
     }
-    
+
     return username;
+}
+
+// Cache for leaderboard rankings to avoid frequent database calls
+let leaderboardCache = { data: null, lastUpdate: 0 };
+const CACHE_DURATION = 30000; // 30 seconds
+
+async function addLeaderboardMedal(username) {
+    try {
+        const now = Date.now();
+
+        // Use cached data if it's recent
+        if (leaderboardCache.data && (now - leaderboardCache.lastUpdate) < CACHE_DURATION) {
+            const userRank = leaderboardCache.data.find(user => user.username === username);
+            if (userRank) {
+                return getMedalForRank(userRank.rank) + username;
+            }
+            return username;
+        }
+
+        // Fetch fresh leaderboard data
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const snapshot = await window.firebaseGet(usersRef);
+
+        if (!snapshot.exists()) return username;
+
+        const users = snapshot.val();
+        const userEntries = Object.entries(users)
+            .filter(([_, user]) => user.points > 0)
+            .sort((a, b) => b[1].points - a[1].points)
+            .map(([username, user], index) => ({
+                username,
+                points: user.points,
+                rank: index + 1
+            }));
+
+        // Update cache
+        leaderboardCache = {
+            data: userEntries,
+            lastUpdate: now
+        };
+
+        // Find the user's rank
+        const userRank = userEntries.find(user => user.username === username);
+        if (userRank) {
+            return getMedalForRank(userRank.rank) + username;
+        }
+
+        return username;
+    } catch (error) {
+        console.error('Error getting leaderboard medal:', error);
+        return username;
+    }
+}
+
+function getMedalForRank(rank) {
+    switch (rank) {
+        case 1: return '🥇 ';
+        case 2: return '🥈 ';
+        case 3: return '🥉 ';
+        default: return '';
+    }
 }
 
 async function updateLeaderboard() {
@@ -2129,27 +2241,27 @@ async function redistributeWealth() {
             .filter(([_, user]) => user.points > 0)
             .sort((a, b) => b[1].points - a[1].points);
         
-        const topTenPercent = Math.max(1, Math.floor(userEntries.length * 0.1));
+        const topFivePercent = Math.max(1, Math.floor(userEntries.length * 0.05));
         const redistributeAmount = Math.floor(userEntries[0][1].points * 0.1); // Take 10% from richest
-        
+
         if (redistributeAmount > 10) {
-            // Take from top 10%
-            for (let i = 0; i < topTenPercent; i++) {
+            // Take from top 5%
+            for (let i = 0; i < topFivePercent; i++) {
                 const [userId, user] = userEntries[i];
                 const takeAmount = Math.floor(user.points * 0.05); // 5% from each top user
                 user.points = Math.max(0, user.points - takeAmount);
                 await window.firebaseSet(window.firebaseRef(window.firebaseDb, `users/${userId}`), user);
             }
-            
+
             // Give to bottom users
-            const redistributePerUser = Math.floor(redistributeAmount / (userEntries.length - topTenPercent));
-            for (let i = topTenPercent; i < userEntries.length; i++) {
+            const redistributePerUser = Math.floor(redistributeAmount / (userEntries.length - topFivePercent));
+            for (let i = topFivePercent; i < userEntries.length; i++) {
                 const [userId, user] = userEntries[i];
                 user.points += redistributePerUser;
                 await window.firebaseSet(window.firebaseRef(window.firebaseDb, `users/${userId}`), user);
             }
-            
-            await RainbetUtils.addSystemMessage(`🏦 Admin redistributed ${redistributeAmount} points from top ${topTenPercent} users`);
+
+            await RainbetUtils.addSystemMessage(`🏦 Admin redistributed ${redistributeAmount} points from top ${topFivePercent} users`);
             logSecurityEvent('WEALTH_REDISTRIBUTED', RainbetUtils.getCurrentUser(), `Redistributed ${redistributeAmount} points`);
             alert('Wealth redistribution completed!');
         } else {
