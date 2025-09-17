@@ -2521,11 +2521,19 @@ async function showVerifiedAdmins() {
             // Safely iterate through users without exposing sensitive data
             for (const username in users) {
                 const userData = users[username];
-                // Only check admin status - no other data processing
-                if (userData && typeof userData === 'object' &&
+
+                // SECURITY: Filter out API keys, tokens, or suspicious entries
+                const usernameStr = String(username);
+                const isApiKey = usernameStr.length > 20 &&
+                    (usernameStr.includes('AIza') || usernameStr.includes('firebase') ||
+                     usernameStr.includes('api') || usernameStr.includes('key') ||
+                     usernameStr.includes('-') && usernameStr.length > 30);
+
+                // Only check admin status for legitimate usernames
+                if (!isApiKey && userData && typeof userData === 'object' &&
                     (userData.isAdmin === true || userData.adminVerified === true)) {
-                    // Only store the username string - nothing else
-                    verifiedAdmins.push(`👑 ${String(username)}`);
+                    // Only store valid usernames - nothing else
+                    verifiedAdmins.push(`👑 ${usernameStr}`);
                 }
             }
 
