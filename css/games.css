@@ -49,6 +49,39 @@
     border: 1px solid #e9ecef;
 }
 
+/* Earn Games Category Styling */
+.game-category {
+    margin-bottom: 40px;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+.earn-games {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.earn-card {
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.9) 0%, rgba(46, 204, 113, 0.9) 100%) !important;
+    border: 2px solid rgba(39, 174, 96, 0.5);
+    box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3);
+}
+
+.earn-card:hover {
+    background: linear-gradient(135deg, rgba(39, 174, 96, 1) 0%, rgba(46, 204, 113, 1) 100%) !important;
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(39, 174, 96, 0.5);
+}
+
+.gambling-games {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* Category headers styling */
+.game-category h3 {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 25px;
+}
+
 .bet-controls {
     display: flex;
     gap: 8px;

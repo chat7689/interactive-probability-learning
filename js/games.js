@@ -2004,37 +2004,53 @@ function updateFlappyScore() {
 
 // Update game cards visual state based on enabled/disabled status
 function updateGameCards() {
-    const gameCards = document.querySelectorAll('.game-card');
-    const gameTypes = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'memory', 'poker', 'reaction', 'roulette', 'crash', 'flappybird'];
-    
-    gameCards.forEach((card, index) => {
-        if (index < gameTypes.length) {
-            const gameType = gameTypes[index];
+    // Handle earn games separately
+    const earnGames = document.querySelectorAll('.earn-games .game-card');
+    const earnGameTypes = ['memory', 'flappybird'];
+
+    earnGames.forEach((card, index) => {
+        if (index < earnGameTypes.length) {
+            const gameType = earnGameTypes[index];
             const isEnabled = isGameEnabled(gameType);
-            
-            if (isEnabled) {
-                card.classList.remove('disabled');
-                const disabledOverlay = card.querySelector('.disabled-overlay');
-                if (disabledOverlay) {
-                    disabledOverlay.remove();
-                }
-                // Re-enable click
-                card.style.pointerEvents = '';
-            } else {
-                card.classList.add('disabled');
-                
-                // Add disabled overlay if it doesn't exist
-                if (!card.querySelector('.disabled-overlay')) {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'disabled-overlay';
-                    overlay.innerHTML = '<span>DISABLED</span>';
-                    card.appendChild(overlay);
-                }
-                // Disable click
-                card.style.pointerEvents = 'none';
-            }
+            updateGameCardState(card, isEnabled);
         }
     });
+
+    // Handle gambling games
+    const gamblingGames = document.querySelectorAll('.gambling-games .game-card');
+    const gamblingGameTypes = ['coinflip', 'cups', 'dice', 'slots', 'blackjack', 'lottery', 'mines', 'poker', 'reaction', 'roulette', 'crash'];
+
+    gamblingGames.forEach((card, index) => {
+        if (index < gamblingGameTypes.length) {
+            const gameType = gamblingGameTypes[index];
+            const isEnabled = isGameEnabled(gameType);
+            updateGameCardState(card, isEnabled);
+        }
+    });
+}
+
+function updateGameCardState(card, isEnabled) {
+    if (isEnabled) {
+        card.classList.remove('disabled');
+        const disabledOverlay = card.querySelector('.disabled-overlay');
+        if (disabledOverlay) {
+            disabledOverlay.remove();
+        }
+        // Re-enable click
+        card.style.pointerEvents = '';
+    } else {
+        card.classList.add('disabled');
+
+        // Add disabled overlay if it doesn't exist
+        if (!card.querySelector('.disabled-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'disabled-overlay';
+            overlay.innerHTML = '<span>DISABLED</span>';
+            card.appendChild(overlay);
+        }
+        // Disable click
+        card.style.pointerEvents = 'none';
+    }
 }
 
 // Initialize games page

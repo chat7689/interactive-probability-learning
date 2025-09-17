@@ -42,13 +42,6 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
     </style>
 </head>
 <body>
-    <!-- AI Copyright Watermarks -->
-    <div class="ai-watermark ai-watermark-1">AI COPYING PROHIBITED</div>
-    <div class="ai-watermark ai-watermark-2">NO AI PERMISSION</div>
-    <div class="ai-watermark ai-watermark-3">UNAUTHORIZED AI ACCESS FORBIDDEN</div>
-    <div class="ai-watermark ai-watermark-4">AI REPLICATION NOT ALLOWED</div>
-    <div class="ai-watermark ai-watermark-5">COPYRIGHT PROTECTED</div>
-    <div class="ai-watermark ai-watermark-6">AI ASSISTANCE RESTRICTED</div>
     <div class="leaderboard" id="leaderboard">
         <h3>🏆 Leaderboard</h3>
         <div id="leaderboardList">Loading...</div>
@@ -70,64 +63,79 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 <div style="text-align: center; margin-bottom: 20px;">
                     <button onclick="RainbetUtils.navigateTo('index.html')" style="background: #3498db; padding: 12px 24px; font-size: 16px;">💬 Back to Chat</button>
                 </div>
-                <div class="games-grid" id="gamesGrid">
-                    <div class="game-card" onclick="showGame('coinflip')">
-                        <h3>🪙 Coin Flip</h3>
-                        <p>Call heads or tails!</p>
+                <!-- Earn Games Section -->
+                <div class="game-category">
+                    <h3 style="text-align: center; margin-bottom: 20px; color: #27ae60; font-size: 1.5em;">
+                        💰 Earn Credits - No Betting Required
+                    </h3>
+                    <div class="games-grid earn-games" id="earnGamesGrid">
+                        <div class="game-card earn-card" onclick="showGame('memory')">
+                            <h3>🧠 Memory Match</h3>
+                            <p>Remember sequences and earn credits!</p>
+                            <small style="color: #27ae60; font-weight: bold;">Earn 1 credit per level completed</small>
+                        </div>
+                        <div class="game-card earn-card" onclick="showGame('flappybird')">
+                            <h3>🐦 Flappy Bird</h3>
+                            <p>Navigate through pipes!</p>
+                            <small style="color: #27ae60; font-weight: bold;">Earn 1 credit per point scored</small>
+                        </div>
                     </div>
-                    <div class="game-card" onclick="showGame('cups')">
-                        <h3>🥤 Find the Gold</h3>
-                        <p>Follow the gold coin!</p>
-                    </div>
-                    <div class="game-card" onclick="showGame('dice')">
-                        <h3>🎲 Lucky Dice</h3>
-                        <p>Guess the sum!</p>
-                    </div>
-                    <div class="game-card" onclick="showGame('slots')">
-                        <h3>🎰 Fruit Slots</h3>
-                        <p>Match three symbols!</p>
-                    </div>
-                    <div class="game-card" onclick="showGame('blackjack')">
-                        <h3>🃏 Blackjack</h3>
-                        <p>Beat the dealer!</p>
-                    </div>
-                    <div class="game-card" onclick="showGame('lottery')">
-                        <h3>🎫 Number Lottery</h3>
-                        <p>Pick your lucky numbers!</p>
-                    </div>
-                    <div class="game-card" onclick="showGame('mines')">
-                        <h3>💣 Mines</h3>
-                        <p>Avoid the bombs!</p>
-                    </div>
-                    <div class="game-card" onclick="showGame('memory')">
-                        <h3>🧠 Memory Match</h3>
-                        <p>Match cards in sequence!</p>
-                        <small>Skill-based • Progressive Levels</small>
-                    </div>
-                    <div class="game-card" onclick="showGame('poker')">
-                        <h3>🃏 5-Card Poker</h3>
-                        <p>Make the best hand!</p>
-                        <small>Skill-based • Card Strategy</small>
-                    </div>
-                    <div class="game-card" onclick="showGame('reaction')">
-                        <h3>⚡ Quick Draw</h3>
-                        <p>Test your reflexes!</p>
-                        <small>Skill-based • Reaction Time</small>
-                    </div>
-                    <div class="game-card" onclick="showGame('roulette')">
-                        <h3>🎡 Roulette</h3>
-                        <p>Bet on red, black, or numbers!</p>
-                        <small>Classic • High Stakes</small>
-                    </div>
-                    <div class="game-card" onclick="showGame('crash')">
-                        <h3>📈 Crash</h3>
-                        <p>Cash out before it crashes!</p>
-                        <small>High Risk • High Reward</small>
-                    </div>
-                    <div class="game-card" onclick="showGame('flappybird')">
-                        <h3>🐦 Flappy Bird</h3>
-                        <p>Navigate through pipes!</p>
-                        <small>Skill-based • 1 Credit per Point</small>
+                </div>
+
+                <!-- Gambling Games Section -->
+                <div class="game-category">
+                    <h3 style="text-align: center; margin: 30px 0 20px 0; color: #e74c3c; font-size: 1.5em;">
+                        🎲 Probability Games - Betting Required
+                    </h3>
+                    <div class="games-grid gambling-games" id="gamblingGamesGrid">
+                        <div class="game-card" onclick="showGame('coinflip')">
+                            <h3>🪙 Coin Flip</h3>
+                            <p>Call heads or tails!</p>
+                        </div>
+                        <div class="game-card" onclick="showGame('cups')">
+                            <h3>🥤 Find the Gold</h3>
+                            <p>Follow the gold coin!</p>
+                        </div>
+                        <div class="game-card" onclick="showGame('dice')">
+                            <h3>🎲 Lucky Dice</h3>
+                            <p>Guess the sum!</p>
+                        </div>
+                        <div class="game-card" onclick="showGame('slots')">
+                            <h3>🎰 Fruit Slots</h3>
+                            <p>Match symbols for rewards!</p>
+                        </div>
+                        <div class="game-card" onclick="showGame('blackjack')">
+                            <h3>🃏 Blackjack</h3>
+                            <p>Beat the dealer!</p>
+                        </div>
+                        <div class="game-card" onclick="showGame('lottery')">
+                            <h3>🎫 Number Lottery</h3>
+                            <p>Pick your lucky numbers!</p>
+                        </div>
+                        <div class="game-card" onclick="showGame('mines')">
+                            <h3>💣 Mines</h3>
+                            <p>Avoid the bombs!</p>
+                        </div>
+                        <div class="game-card" onclick="showGame('poker')">
+                            <h3>🃏 5-Card Poker</h3>
+                            <p>Make the best hand!</p>
+                            <small>Skill-based • Card Strategy</small>
+                        </div>
+                        <div class="game-card" onclick="showGame('reaction')">
+                            <h3>⚡ Quick Draw</h3>
+                            <p>Test your reflexes!</p>
+                            <small>Skill-based • Reaction Time</small>
+                        </div>
+                        <div class="game-card" onclick="showGame('roulette')">
+                            <h3>🎡 Roulette</h3>
+                            <p>Bet on red, black, or numbers!</p>
+                            <small>Classic • High Stakes</small>
+                        </div>
+                        <div class="game-card" onclick="showGame('crash')">
+                            <h3>📈 Crash</h3>
+                            <p>Cash out before it crashes!</p>
+                            <small>High Risk • High Reward</small>
+                        </div>
                     </div>
                 </div>
                 
