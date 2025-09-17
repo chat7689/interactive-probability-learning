@@ -2511,33 +2511,33 @@ async function showUserPosition(username) {
 
 async function showVerifiedAdmins() {
     try {
-        const accountsRef = window.firebaseRef(window.firebaseDb, 'accounts');
-        const snapshot = await window.firebaseGet(accountsRef);
-        
+        const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+        const snapshot = await window.firebaseGet(usersRef);
+
         if (snapshot.exists()) {
-            const accounts = snapshot.val();
-            const verifiedUsers = [];
-            
-            for (const [username, data] of Object.entries(accounts)) {
-                if (data.isAdmin) {
-                    verifiedUsers.push(`👤 ${username} (Admin)`);
+            const users = snapshot.val();
+            const verifiedAdmins = [];
+
+            for (const [username, data] of Object.entries(users)) {
+                if (data.isAdmin === true || data.adminVerified === true) {
+                    verifiedAdmins.push(`👑 ${username} (Admin)`);
                 }
             }
-            
-            if (verifiedUsers.length > 0) {
-                const verifiedList = `🔐 Verified Users:\n${verifiedUsers.join('\n')}`;
-                await RainbetUtils.addSystemMessage(verifiedList);
+
+            if (verifiedAdmins.length > 0) {
+                const adminList = `🔐 Current Admins:\n${verifiedAdmins.join('\n')}`;
+                await RainbetUtils.addSystemMessage(adminList);
             } else {
-                await RainbetUtils.addSystemMessage('No verified users found.');
+                await RainbetUtils.addSystemMessage('No verified admins found.');
             }
-            
+
             logSecurityEvent('ADMIN_COMMAND_SUCCESS', RainbetUtils.getCurrentUser(), '/admin (who)');
         } else {
             await RainbetUtils.addSystemMessage('No user accounts found.');
         }
     } catch (error) {
-        console.error('Error fetching verified users:', error);
-        await RainbetUtils.addSystemMessage('Error retrieving verified users list.');
+        console.error('Error fetching verified admins:', error);
+        await RainbetUtils.addSystemMessage('Error retrieving admin list.');
     }
 }
 
