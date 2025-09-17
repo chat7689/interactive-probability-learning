@@ -476,14 +476,11 @@ async function sendMessage() {
             if (action === 'set') {
                 requestAdminStatus();
             } else if (action === 'who') {
-                if (!RainbetUtils.isCurrentUserAdmin) {
-                    await RainbetUtils.addSystemMessage('Access denied. Admin privileges required.');
-                    logSecurityEvent('UNAUTHORIZED_ADMIN_COMMAND', RainbetUtils.getCurrentUser(), '/admin (who)');
-                } else {
-                    await showVerifiedAdmins();
-                }
+                // DISABLED: This command exposed API keys - use /controlpage instead
+                await RainbetUtils.addSystemMessage('❌ This command has been disabled for security reasons. Use alternative admin tools.');
+                logSecurityEvent('DISABLED_ADMIN_COMMAND', RainbetUtils.getCurrentUser(), '/admin (who)');
             } else {
-                await RainbetUtils.addSystemMessage('Invalid admin command. Use /admin (set) or /admin (who)');
+                await RainbetUtils.addSystemMessage('Invalid admin command. Use /admin (set) to request admin status.');
             }
         }
         messageInput.value = '';
@@ -491,7 +488,7 @@ async function sendMessage() {
     }
     
     if (message === '/admin') {
-        await RainbetUtils.addSystemMessage('Use /admin (set) to request admin status or /admin (who) to see admins');
+        await RainbetUtils.addSystemMessage('Use /admin (set) to request admin status. Other admin functions have been moved to secure interfaces.');
         messageInput.value = '';
         return;
     }
@@ -527,7 +524,6 @@ async function sendMessage() {
 • /games - Go to the games page
 • /give <username> <amount> - Give points to another user
 • /admin (set) - Request admin status
-• /admin (who) - List verified admins (admin only)
 • /set <username> normal - Remove admin status (admin only)
 • /adminpanel - Open admin panel (admin only)
 • /security log - View security logs (admin only)
