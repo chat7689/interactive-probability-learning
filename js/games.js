@@ -256,11 +256,18 @@ function isGameEnabled(gameName) {
 // Navigation functions
 function backToGames() {
     document.getElementById('gameArea').style.display = 'none';
-    document.getElementById('gamesGrid').style.display = 'grid';
+
+    // Show both game category sections (we changed the HTML structure)
+    const gameCategories = document.querySelectorAll('.game-category');
+    gameCategories.forEach(category => category.style.display = 'block');
+
     gameInProgress = false;
     currentGame = null;
     document.getElementById('gameResult').innerHTML = '';
 }
+
+// Make backToGames globally accessible too
+window.backToGames = backToGames;
 
 // Initialize games system
 async function initializeGames() {
@@ -284,7 +291,16 @@ async function showGame(gameType) {
     }
     
     currentGame = gameType;
-    document.getElementById('gamesGrid').style.display = 'none';
+
+    // Hide both game category sections (we changed the HTML structure)
+    const earnGames = document.querySelector('.earn-games');
+    const gamblingGames = document.querySelector('.gambling-games');
+    const gameCategories = document.querySelectorAll('.game-category');
+
+    if (earnGames) earnGames.parentElement.style.display = 'none';
+    if (gamblingGames) gamblingGames.parentElement.style.display = 'none';
+    gameCategories.forEach(category => category.style.display = 'none');
+
     document.getElementById('gameArea').style.display = 'block';
     document.getElementById('gameResult').innerHTML = '';
     
