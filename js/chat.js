@@ -341,10 +341,10 @@ async function enterChat() {
             messageInput.focus();
         }
         
-        // Update leaderboard every 30 seconds
+        // Update leaderboard every 10 seconds
         setInterval(async () => {
             await updateLeaderboard();
-        }, 30000);
+        }, 10000);
     } catch (error) {
         console.error('Error entering chat:', error);
         // Don't prevent login from working if there's an error in enterChat
@@ -737,8 +737,7 @@ async function sendMessage() {
         // Give to target user
         await RainbetUtils.awardPoints(amount, targetUsername);
         
-        // Add system message
-        await RainbetUtils.addSystemMessage(`${currentUser} gave ${amount} points to ${targetUsername}!`);
+        // No system message for user-to-user point transfers
         await updateLeaderboard();
         
         messageInput.value = '';
@@ -1592,8 +1591,7 @@ async function givePointsToUser() {
         }
         
         await RainbetUtils.awardPoints(amount, username);
-        await RainbetUtils.addSystemMessage(`💰 Admin gave ${amount} points to ${username}`);
-        
+
         // Clear inputs
         document.getElementById('giveUsername').value = '';
         document.getElementById('giveAmount').value = '';
@@ -1632,9 +1630,7 @@ async function setUserPoints() {
         
         // Set the new total directly
         await window.firebaseSet(userRef, { points: newTotal });
-        
-        await RainbetUtils.addSystemMessage(`🎯 Admin set ${username}'s points to ${newTotal} (was ${currentPoints})`);
-        
+
         // Clear inputs
         document.getElementById('setUsername').value = '';
         document.getElementById('setAmount').value = '';
@@ -1677,9 +1673,7 @@ async function removePointsFromUser() {
         
         const newTotal = currentPoints - amount;
         await window.firebaseSet(userRef, { points: newTotal });
-        
-        await RainbetUtils.addSystemMessage(`➖ Admin removed ${amount} points from ${username} (${currentPoints} → ${newTotal})`);
-        
+
         // Clear inputs
         document.getElementById('removeUsername').value = '';
         document.getElementById('removeAmount').value = '';
@@ -1708,7 +1702,6 @@ async function givePointsToAll() {
             }
         }
         
-        await RainbetUtils.addSystemMessage(`Admin gave ${pointAmount} points to all users!`);
         logSecurityEvent('MASS_POINTS_GIVEN', RainbetUtils.getCurrentUser(), `Gave ${pointAmount} points to all users`);
         await updateLeaderboard();
         await loadUserPointsList();
@@ -1745,7 +1738,6 @@ async function setAllUsersPoints() {
                 userCount++;
             }
             
-            await RainbetUtils.addSystemMessage(`Admin set all ${userCount} users' points to ${setPointsValue}!`);
             logSecurityEvent('ALL_POINTS_SET', RainbetUtils.getCurrentUser(), `Set all users to ${setPointsValue} points`);
             await updateLeaderboard();
             await loadUserPointsList();
@@ -2149,7 +2141,6 @@ async function updateBettingLimits() {
         const limitsRef = window.firebaseRef(window.firebaseDb, 'economySettings/bettingLimits');
         await window.firebaseSet(limitsRef, { minBet, maxBet });
         
-        await RainbetUtils.addSystemMessage(`🏦 Admin updated betting limits: ${minBet}-${maxBet} points`);
         logSecurityEvent('BETTING_LIMITS_UPDATED', RainbetUtils.getCurrentUser(), `Min: ${minBet}, Max: ${maxBet}`);
         alert('Betting limits updated successfully!');
     } catch (error) {
@@ -2278,7 +2269,6 @@ async function redistributeWealth() {
                 await window.firebaseSet(window.firebaseRef(window.firebaseDb, `users/${userId}`), user);
             }
 
-            await RainbetUtils.addSystemMessage(`🏦 Admin redistributed ${redistributeAmount} points from top ${topFivePercent} users`);
             logSecurityEvent('WEALTH_REDISTRIBUTED', RainbetUtils.getCurrentUser(), `Redistributed ${redistributeAmount} points`);
             alert('Wealth redistribution completed!');
         } else {

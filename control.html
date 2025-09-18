@@ -193,6 +193,121 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
         margin-bottom: 20px;
         border-radius: 10px;
       }
+
+      .admin-section {
+        margin: 30px 0;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .admin-section h3 {
+        color: #3498db;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      .multiplier-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 15px;
+      }
+
+      .multiplier-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        gap: 10px;
+      }
+
+      .multiplier-item label {
+        font-weight: bold;
+        flex: 1;
+      }
+
+      .multiplier-item input {
+        width: 80px;
+        padding: 8px;
+        border: 1px solid #555;
+        border-radius: 5px;
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+        text-align: center;
+      }
+
+      .multiplier-item button {
+        padding: 8px 15px;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      .multiplier-item button:hover {
+        background: #2980b9;
+      }
+
+      .tax-controls {
+        text-align: center;
+        padding: 20px;
+      }
+
+      .tax-btn {
+        padding: 15px 25px;
+        margin: 10px;
+        font-size: 16px;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .tax-btn:nth-child(2) {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        color: white;
+      }
+
+      .tax-btn:nth-child(3) {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        color: white;
+      }
+
+      .tax-btn:nth-child(4) {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+      }
+
+      .tax-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .tax-status {
+        margin-top: 15px;
+        padding: 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .tax-status.success {
+        background: rgba(39, 174, 96, 0.2);
+        color: #27ae60;
+        border: 1px solid #27ae60;
+      }
+
+      .tax-status.error {
+        background: rgba(231, 76, 60, 0.2);
+        color: #e74c3c;
+        border: 1px solid #e74c3c;
+      }
     </style>
 </head>
 <body>
@@ -226,6 +341,45 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
 
             <div id="usersList" class="user-list">
                 <p style="text-align: center; color: #bbb;">Loading users...</p>
+            </div>
+
+            <!-- Game Multiplier Controls -->
+            <div class="admin-section">
+                <h3>🎮 Game Multiplier Controls</h3>
+                <div class="multiplier-grid">
+                    <div class="multiplier-item">
+                        <label>Coinflip Multiplier:</label>
+                        <input type="number" id="coinflip-multiplier" min="0.1" max="10" step="0.1" value="2.0">
+                        <button onclick="updateMultiplier('coinflip')">Update</button>
+                    </div>
+                    <div class="multiplier-item">
+                        <label>Dice Low/High Multiplier:</label>
+                        <input type="number" id="dice-low-multiplier" min="0.1" max="10" step="0.1" value="2.4">
+                        <button onclick="updateMultiplier('dice-low')">Update</button>
+                    </div>
+                    <div class="multiplier-item">
+                        <label>Dice Mid Multiplier:</label>
+                        <input type="number" id="dice-mid-multiplier" min="0.1" max="10" step="0.1" value="7.2">
+                        <button onclick="updateMultiplier('dice-mid')">Update</button>
+                    </div>
+                    <div class="multiplier-item">
+                        <label>Cups Multiplier:</label>
+                        <input type="number" id="cups-multiplier" min="0.1" max="10" step="0.1" value="3.0">
+                        <button onclick="updateMultiplier('cups')">Update</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Taxation Controls -->
+            <div class="admin-section">
+                <h3>💰 Taxation Controls</h3>
+                <div class="tax-controls">
+                    <p>Tax all users' credits (rounding up):</p>
+                    <button onclick="taxAllUsers(1)" class="tax-btn">Tax 1%</button>
+                    <button onclick="taxAllUsers(5)" class="tax-btn">Tax 5%</button>
+                    <button onclick="taxAllUsers(10)" class="tax-btn">Tax 10%</button>
+                </div>
+                <div id="taxStatus" class="tax-status"></div>
             </div>
         </div>
     </div>
@@ -291,8 +445,11 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                 // Show loading message immediately
                 document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #fff;">🔄 Connecting to database...</p>';
 
-                // Load users with a small delay to ensure DOM is ready
-                setTimeout(loadUsers, 500);
+                // Load users and multipliers with a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    loadUsers();
+                    loadMultipliers();
+                }, 500);
                 logAccess('SUCCESSFUL_AUTH');
             } else {
                 errorDiv.textContent = '❌ Invalid passcode. Access denied.';
@@ -441,6 +598,159 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
             } catch (error) {
                 console.error('Error updating admin status:', error);
                 alert('Error updating admin status');
+            }
+        }
+
+        // Load current multipliers when panel loads
+        async function loadMultipliers() {
+            if (!isAuthenticated) return;
+
+            try {
+                const configRef = window.firebaseRef(window.firebaseDb, 'game_config');
+                const snapshot = await window.firebaseGet(configRef);
+
+                if (snapshot.exists()) {
+                    const config = snapshot.val();
+                    if (config.multipliers) {
+                        document.getElementById('coinflip-multiplier').value = config.multipliers.coinflip || 2.0;
+                        document.getElementById('dice-low-multiplier').value = config.multipliers.diceLow || 2.4;
+                        document.getElementById('dice-mid-multiplier').value = config.multipliers.diceMid || 7.2;
+                        document.getElementById('cups-multiplier').value = config.multipliers.cups || 3.0;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading multipliers:', error);
+            }
+        }
+
+        // Update game multipliers
+        async function updateMultiplier(gameType) {
+            if (!isAuthenticated) return;
+
+            let value, configKey;
+            switch(gameType) {
+                case 'coinflip':
+                    value = parseFloat(document.getElementById('coinflip-multiplier').value);
+                    configKey = 'coinflip';
+                    break;
+                case 'dice-low':
+                    value = parseFloat(document.getElementById('dice-low-multiplier').value);
+                    configKey = 'diceLow';
+                    break;
+                case 'dice-mid':
+                    value = parseFloat(document.getElementById('dice-mid-multiplier').value);
+                    configKey = 'diceMid';
+                    break;
+                case 'cups':
+                    value = parseFloat(document.getElementById('cups-multiplier').value);
+                    configKey = 'cups';
+                    break;
+                default:
+                    return;
+            }
+
+            // Validate range
+            if (value < 0.1 || value > 10) {
+                alert('Multiplier must be between 0.1x and 10x');
+                return;
+            }
+
+            try {
+                const configRef = window.firebaseRef(window.firebaseDb, `game_config/multipliers/${configKey}`);
+                await window.firebaseSet(configRef, value);
+
+                // Log the change
+                const securityRef = window.firebaseRef(window.firebaseDb, 'security_logs');
+                await window.firebasePush(securityRef, {
+                    action: 'MULTIPLIER_UPDATED',
+                    game: gameType,
+                    newValue: value,
+                    timestamp: new Date().toISOString(),
+                    source: 'CONTROL_PANEL'
+                });
+
+                alert(`${gameType} multiplier updated to ${value}x`);
+            } catch (error) {
+                console.error('Error updating multiplier:', error);
+                alert('Error updating multiplier');
+            }
+        }
+
+        // Tax all users
+        async function taxAllUsers(percentage) {
+            if (!isAuthenticated) return;
+
+            const confirmed = confirm(`Are you sure you want to tax ALL users ${percentage}% of their credits? This action cannot be undone.`);
+            if (!confirmed) return;
+
+            const statusDiv = document.getElementById('taxStatus');
+            statusDiv.innerHTML = `🔄 Processing ${percentage}% tax on all users...`;
+            statusDiv.className = 'tax-status';
+
+            try {
+                const usersRef = window.firebaseRef(window.firebaseDb, 'users');
+                const snapshot = await window.firebaseGet(usersRef);
+
+                if (!snapshot.exists()) {
+                    statusDiv.innerHTML = '❌ No users found to tax';
+                    statusDiv.className = 'tax-status error';
+                    return;
+                }
+
+                const users = snapshot.val();
+                let taxedUsers = 0;
+                let totalTaxCollected = 0;
+
+                for (const [username, userData] of Object.entries(users)) {
+                    // Skip API keys and invalid entries
+                    const usernameStr = String(username);
+                    const isApiKey = usernameStr.length > 20 ||
+                        usernameStr.includes('AIza') ||
+                        usernameStr.includes('firebase') ||
+                        usernameStr.includes('api') ||
+                        usernameStr.includes('key') ||
+                        (usernameStr.includes('-') && usernameStr.length > 25);
+
+                    if (isApiKey || !userData || typeof userData !== 'object') {
+                        continue;
+                    }
+
+                    const currentPoints = userData.points || 0;
+                    if (currentPoints <= 0) continue;
+
+                    // Calculate tax amount and round UP
+                    const taxAmount = Math.ceil(currentPoints * (percentage / 100));
+                    const newPoints = Math.max(0, currentPoints - taxAmount);
+
+                    // Update user points
+                    const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
+                    await window.firebaseUpdate(userRef, { points: newPoints });
+
+                    taxedUsers++;
+                    totalTaxCollected += taxAmount;
+                }
+
+                // Log the taxation event
+                const securityRef = window.firebaseRef(window.firebaseDb, 'security_logs');
+                await window.firebasePush(securityRef, {
+                    action: 'MASS_TAXATION',
+                    percentage: percentage,
+                    usersAffected: taxedUsers,
+                    totalTaxCollected: totalTaxCollected,
+                    timestamp: new Date().toISOString(),
+                    source: 'CONTROL_PANEL'
+                });
+
+                statusDiv.innerHTML = `✅ Successfully taxed ${taxedUsers} users ${percentage}%. Total collected: ${totalTaxCollected} credits.`;
+                statusDiv.className = 'tax-status success';
+
+                // Reload users to show updated points
+                setTimeout(loadUsers, 1000);
+
+            } catch (error) {
+                console.error('Error during taxation:', error);
+                statusDiv.innerHTML = `❌ Error during taxation: ${error.message}`;
+                statusDiv.className = 'tax-status error';
             }
         }
 

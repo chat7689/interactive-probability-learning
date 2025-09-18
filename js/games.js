@@ -80,8 +80,8 @@ function unlockBetAmount() {
     }
 }
 
-// Game balance constants - All games target 100% RTP (1:1 ratio before tax)
-const GAMES_CONFIG = {
+// Game balance constants - Default values, will be updated from Firebase
+let GAMES_CONFIG = {
     coinflip: { multiplier: 2.0, winChance: 0.5 }, // 50% × 2.0 = 100% RTP
     dice: {
         low: { multiplier: 2.4, minSum: 2, maxSum: 6 },    // 15/36 × 2.4 = 100% RTP
@@ -222,6 +222,38 @@ async function loadTaxSettings() {
     }
 }
 
+// Load multipliers from Firebase and update GAMES_CONFIG
+async function loadGameMultipliers() {
+    try {
+        const configRef = window.firebaseRef(window.firebaseDb, 'game_config/multipliers');
+        const snapshot = await window.firebaseGet(configRef);
+
+        if (snapshot.exists()) {
+            const multipliers = snapshot.val();
+
+            // Update multipliers if they exist in Firebase
+            if (multipliers.coinflip) {
+                GAMES_CONFIG.coinflip.multiplier = multipliers.coinflip;
+            }
+            if (multipliers.diceLow) {
+                GAMES_CONFIG.dice.low.multiplier = multipliers.diceLow;
+                GAMES_CONFIG.dice.high.multiplier = multipliers.diceLow; // High uses same as low
+            }
+            if (multipliers.diceMid) {
+                GAMES_CONFIG.dice.mid.multiplier = multipliers.diceMid;
+            }
+            if (multipliers.cups) {
+                GAMES_CONFIG.cups.multiplier = multipliers.cups;
+            }
+
+            console.log('Loaded multipliers from Firebase:', multipliers);
+        }
+    } catch (error) {
+        console.error('Error loading multipliers:', error);
+        // Keep default values if error
+    }
+}
+
 // Load game toggle settings
 async function loadGameToggles() {
     try {
@@ -272,6 +304,7 @@ window.backToGames = backToGames;
 // Initialize games system
 async function initializeGames() {
     await loadTaxSettings();
+    await loadGameMultipliers();
     await loadGameToggles();
     // Update game card visual states after loading toggles
     updateGameCards();
@@ -430,6 +463,10 @@ async function flipCoin() {
 let diceChoice = null;
 
 function setupDice(container) {
+    const lowMultiplier = GAMES_CONFIG.dice.low.multiplier;
+    const midMultiplier = GAMES_CONFIG.dice.mid.multiplier;
+    const highMultiplier = GAMES_CONFIG.dice.high.multiplier;
+
     container.innerHTML = `
         <h3>🎲 Lucky Dice</h3>
         <p>Roll two dice and guess the sum!</p>
@@ -438,9 +475,9 @@ function setupDice(container) {
             <div class="die" id="die2">?</div>
         </div>
         <div style="margin: 15px 0;">
-            <button class="choice-btn" onclick="setDiceChoice('low')">Low (2-6) - 2.4x</button>
-            <button class="choice-btn" onclick="setDiceChoice('mid')">Mid (7-8) - 7.2x</button>
-            <button class="choice-btn" onclick="setDiceChoice('high')">High (9-12) - 2.4x</button>
+            <button class="choice-btn" onclick="setDiceChoice('low')">Low (2-6) - ${lowMultiplier}x</button>
+            <button class="choice-btn" onclick="setDiceChoice('mid')">Mid (7-8) - ${midMultiplier}x</button>
+            <button class="choice-btn" onclick="setDiceChoice('high')">High (9-12) - ${highMultiplier}x</button>
         </div>
         <button class="game-btn" id="rollBtn" onclick="rollDice()" disabled>Roll Dice</button>
     `;
@@ -2099,9 +2136,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('chatTitle').textContent = 'School Rainbet - Games';
     }
     
-    // Update leaderboard every 30 seconds
+    // Update leaderboard every 10 seconds
     setInterval(async () => {
         await updateLeaderboard();
         await updateUserPoints();
-    }, 30000);
+    }, 10000);
 });

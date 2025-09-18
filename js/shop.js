@@ -256,7 +256,6 @@ async function claimDailyCredits() {
     await updateUserPoints();
     await updateLeaderboard();
     checkDailyCreditsButton();
-    await RainbetUtils.addSystemMessage(currentUser + ' claimed their daily points!');
 }
 
 function checkDailyCreditsButton() {
@@ -494,10 +493,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('chatTitle').textContent = 'School Rainbet - Shop';
     }
     
-    // Refresh active items and leaderboard every minute
+    // Refresh active items and leaderboard every 10 seconds
     setInterval(async () => {
         await checkActiveItems();
         await updateUserPoints();
         await updateLeaderboard();
-    }, 60000);
+    }, 10000);
 });
