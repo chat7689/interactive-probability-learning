@@ -520,6 +520,7 @@ async function sendMessage() {
 • /time - Display current server time
 • /ping - Test connection to server
 • /position (username) - Show leaderboard position (or your own)
+• /place (username) - Show leaderboard position for specified user
 • /shop - Go to the shop
 • /games - Go to the games page
 • /give <username> <amount> - Give points to another user
@@ -594,6 +595,19 @@ async function sendMessage() {
         const match = message.match(/\/position \((.*?)\)/);
         const targetUser = match ? match[1].trim() : RainbetUtils.getCurrentUser();
         await showUserPosition(targetUser);
+        messageInput.value = '';
+        return;
+    }
+
+    // /place command - alias for /position
+    if (message.startsWith('/place (')) {
+        const match = message.match(/\/place \((.*?)\)/);
+        if (match) {
+            const targetUser = match[1].trim();
+            await showUserPosition(targetUser);
+        } else {
+            await RainbetUtils.addSystemMessage('Usage: /place (username) - Show leaderboard position for specified user');
+        }
         messageInput.value = '';
         return;
     }

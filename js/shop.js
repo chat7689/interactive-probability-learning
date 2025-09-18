@@ -37,7 +37,7 @@ const SHOP_ITEMS = [
         name: '📏 Large Text',
         baseName: 'Large Text',
         prices: [10, 25, 50],
-        durations: [60 * 60 * 1000, 2 * 60 * 60 * 1000, 3 * 60 * 60 * 1000], // 1hr, 2hrs, 3hrs
+        durations: [15 * 60 * 1000, 30 * 60 * 1000, 45 * 60 * 1000], // 15min, 30min, 45min (4x shorter)
         category: 'Text Effects'
     },
     
@@ -47,7 +47,7 @@ const SHOP_ITEMS = [
         name: '💪 Bold Text',
         baseName: 'Bold Text',
         prices: [10, 25, 50],
-        durations: [60 * 60 * 1000, 2 * 60 * 60 * 1000, 3 * 60 * 60 * 1000],
+        durations: [15 * 60 * 1000, 30 * 60 * 1000, 45 * 60 * 1000], // 15min, 30min, 45min (4x shorter)
         category: 'Text Effects'
     },
     
@@ -57,7 +57,7 @@ const SHOP_ITEMS = [
         name: '🎯 Highlighted Text',
         baseName: 'Highlighted Text',
         prices: [10, 25, 50],
-        durations: [60 * 60 * 1000, 2 * 60 * 60 * 1000, 3 * 60 * 60 * 1000],
+        durations: [15 * 60 * 1000, 30 * 60 * 1000, 45 * 60 * 1000], // 15min, 30min, 45min (4x shorter)
         category: 'Text Effects'
     },
     
@@ -67,7 +67,7 @@ const SHOP_ITEMS = [
         name: '✨ Glow Effect',
         baseName: 'Glow Effect',
         prices: [10, 25, 50],
-        durations: [30 * 60 * 1000, 60 * 60 * 1000, 90 * 60 * 1000], // 30min, 1hr, 90min
+        durations: [7.5 * 60 * 1000, 15 * 60 * 1000, 22.5 * 60 * 1000], // 7.5min, 15min, 22.5min (4x shorter)
         category: 'Visual Effects'
     },
     
@@ -77,7 +77,7 @@ const SHOP_ITEMS = [
         name: '⚡ Electric Border',
         baseName: 'Electric Border',
         prices: [10, 25, 50],
-        durations: [20 * 60 * 1000, 40 * 60 * 1000, 60 * 60 * 1000], // 20min, 40min, 1hr
+        durations: [5 * 60 * 1000, 10 * 60 * 1000, 15 * 60 * 1000], // 5min, 10min, 15min (4x shorter)
         category: 'Visual Effects'
     },
     
@@ -87,7 +87,7 @@ const SHOP_ITEMS = [
         name: '👑 VIP Badge',
         baseName: 'VIP Badge',
         prices: [100, 250, 500],
-        durations: [6 * 60 * 60 * 1000, 12 * 60 * 60 * 1000, 24 * 60 * 60 * 1000], // 6hrs, 12hrs, 24hrs
+        durations: [1.5 * 60 * 60 * 1000, 3 * 60 * 60 * 1000, 6 * 60 * 60 * 1000], // 1.5hrs, 3hrs, 6hrs (4x shorter)
         category: 'Status Badges'
     }
 ];

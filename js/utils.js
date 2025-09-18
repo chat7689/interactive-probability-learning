@@ -105,12 +105,12 @@ class RainbetUtils {
         const now = Date.now();
         const activeEffects = [];
         const shopItems = [
-            { id: 'large_text', durations: [60*60*1000, 2*60*60*1000, 3*60*60*1000] },
-            { id: 'bold_text', durations: [60*60*1000, 2*60*60*1000, 3*60*60*1000] },
-            { id: 'highlight_text', durations: [60*60*1000, 2*60*60*1000, 3*60*60*1000] },
-            { id: 'glow_effect', durations: [30*60*1000, 60*60*1000, 90*60*1000] },
-            { id: 'electric_border', durations: [20*60*1000, 40*60*1000, 60*60*1000] },
-            { id: 'vip_badge', durations: [6*60*60*1000, 12*60*60*1000, 24*60*60*1000] }
+            { id: 'large_text', durations: [15*60*1000, 30*60*1000, 45*60*1000] }, // 4x shorter
+            { id: 'bold_text', durations: [15*60*1000, 30*60*1000, 45*60*1000] }, // 4x shorter
+            { id: 'highlight_text', durations: [15*60*1000, 30*60*1000, 45*60*1000] }, // 4x shorter
+            { id: 'glow_effect', durations: [7.5*60*1000, 15*60*1000, 22.5*60*1000] }, // 4x shorter
+            { id: 'electric_border', durations: [5*60*1000, 10*60*1000, 15*60*1000] }, // 4x shorter
+            { id: 'vip_badge', durations: [1.5*60*60*1000, 3*60*60*1000, 6*60*60*1000] } // 4x shorter
         ];
 
         console.log(`Checking effects for ${username}:`, userData.items);
