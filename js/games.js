@@ -1208,7 +1208,7 @@ async function showGameResult(won, betAmount, multiplier, message) {
 
         await updateUserPoints();
         await updateLeaderboard();
-        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${netProfit} credits playing ${currentGame}!`);
+        await RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} won ${netProfit} credits playing ${currentGame}!`);
 
         // Log game win to Google Sheets
         if (window.SheetsLogger) {
@@ -1223,7 +1223,7 @@ async function showGameResult(won, betAmount, multiplier, message) {
         }
     } else {
         pointsText = `You lost your bet: ${betAmount} credits`;
-        RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} lost ${betAmount} credits playing ${currentGame}.`);
+        await RainbetUtils.addSystemMessage(`${RainbetUtils.getCurrentUser()} lost ${betAmount} credits playing ${currentGame}.`);
 
         // Log game loss to Google Sheets
         if (window.SheetsLogger) {

@@ -222,8 +222,9 @@ body {
 
 .message-time {
     font-size: 10px;
-    color: white;
+    color: #333;
     font-weight: 400;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.9);
 }
 
 .message-content {

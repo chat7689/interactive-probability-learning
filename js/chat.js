@@ -1002,9 +1002,9 @@ async function displayMessages(forceRefresh = false) {
                 }
                 messageDiv.className = className;
                 
-                // Format timestamp
+                // Format timestamp (handle both Firebase server timestamps and regular timestamps)
                 console.log('Message timestamp:', msg.timestamp, typeof msg.timestamp);
-                const timestamp = msg.timestamp || Date.now();
+                const timestamp = msg.timestamp?.seconds ? msg.timestamp.seconds * 1000 : msg.timestamp || Date.now();
                 const timeStr = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
                 console.log('Time string:', timeStr);
 
