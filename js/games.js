@@ -438,9 +438,9 @@ function setupDice(container) {
             <div class="die" id="die2">?</div>
         </div>
         <div style="margin: 15px 0;">
-            <button class="choice-btn" onclick="setDiceChoice('low')">Low (2-6) - 3x</button>
-            <button class="choice-btn" onclick="setDiceChoice('mid')">Mid (7-8) - 5x</button>
-            <button class="choice-btn" onclick="setDiceChoice('high')">High (9-12) - 3x</button>
+            <button class="choice-btn" onclick="setDiceChoice('low')">Low (2-6) - 2.4x</button>
+            <button class="choice-btn" onclick="setDiceChoice('mid')">Mid (7-8) - 7.2x</button>
+            <button class="choice-btn" onclick="setDiceChoice('high')">High (9-12) - 2.4x</button>
         </div>
         <button class="game-btn" id="rollBtn" onclick="rollDice()" disabled>Roll Dice</button>
     `;
