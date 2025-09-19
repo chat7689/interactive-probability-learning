@@ -308,6 +308,31 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
         color: #e74c3c;
         border: 1px solid #e74c3c;
       }
+
+      .panel-controls {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .refresh-btn {
+        padding: 15px 25px;
+        font-size: 16px;
+        font-weight: bold;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .refresh-btn:hover {
+        background: linear-gradient(135deg, #2980b9, #1f5f8b);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
     </style>
 </head>
 <body>
@@ -380,6 +405,15 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
                     <button onclick="taxAllUsers(10)" class="tax-btn">Tax 10%</button>
                 </div>
                 <div id="taxStatus" class="tax-status"></div>
+            </div>
+
+            <!-- Control Panel Actions -->
+            <div class="admin-section">
+                <h3>🔄 Panel Controls</h3>
+                <div class="panel-controls">
+                    <button onclick="refreshPanel()" class="refresh-btn">🔄 Refresh All Data</button>
+                    <button onclick="forceReloadUsers()" class="refresh-btn">👥 Force Reload Users</button>
+                </div>
             </div>
         </div>
     </div>
@@ -572,32 +606,102 @@ PROTECTED UNDER COPYRIGHT LAW - ALL RIGHTS RESERVED
             console.log(`Displayed ${validUserCount} valid users`);
         }
 
-        // Toggle admin status
+        // Toggle admin status with improved error handling and verification
         async function toggleAdmin(username, makeAdmin) {
             if (!isAuthenticated) return;
 
+            const confirmed = confirm(`Are you sure you want to ${makeAdmin ? 'GRANT' : 'REMOVE'} admin privileges ${makeAdmin ? 'to' : 'from'} ${username}?`);
+            if (!confirmed) return;
+
             try {
                 const userRef = window.firebaseRef(window.firebaseDb, `users/${username}`);
-                await window.firebaseUpdate(userRef, {
-                    isAdmin: makeAdmin,
-                    adminVerified: makeAdmin
-                });
+
+                // Get current user data to preserve other fields
+                const snapshot = await window.firebaseGet(userRef);
+                if (!snapshot.exists()) {
+                    alert('User not found');
+                    return;
+                }
+
+                const userData = snapshot.val();
+
+                // Update admin status with explicit boolean values
+                const updatedData = {
+                    ...userData,
+                    isAdmin: makeAdmin === true,
+                    adminVerified: makeAdmin === true
+                };
+
+                // If removing admin, also remove any admin-only fields
+                if (!makeAdmin) {
+                    delete updatedData.adminLevel;
+                    delete updatedData.adminPrivileges;
+                }
+
+                await window.firebaseSet(userRef, updatedData);
+
+                // Verify the change was applied
+                const verifySnapshot = await window.firebaseGet(userRef);
+                const verifyData = verifySnapshot.val();
+                const actualStatus = verifyData.isAdmin === true && verifyData.adminVerified === true;
 
                 // Log the admin change
                 const securityRef = window.firebaseRef(window.firebaseDb, 'security_logs');
                 await window.firebasePush(securityRef, {
                     action: makeAdmin ? 'ADMIN_GRANTED' : 'ADMIN_REMOVED',
                     target: username,
+                    requestedStatus: makeAdmin,
+                    actualStatus: actualStatus,
                     timestamp: new Date().toISOString(),
                     source: 'CONTROL_PANEL'
                 });
 
+                // Show result to user
+                if (actualStatus === makeAdmin) {
+                    alert(`✅ Successfully ${makeAdmin ? 'granted admin privileges to' : 'removed admin privileges from'} ${username}`);
+                } else {
+                    alert(`⚠️ Admin status change may not have been applied correctly. Please check and try again.`);
+                }
+
                 // Reload users to update display
-                loadUsers();
+                setTimeout(loadUsers, 500);
 
             } catch (error) {
                 console.error('Error updating admin status:', error);
-                alert('Error updating admin status');
+                alert(`Error updating admin status: ${error.message}`);
+            }
+        }
+
+        // Refresh all panel data
+        async function refreshPanel() {
+            if (!isAuthenticated) return;
+
+            document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #fff;">🔄 Refreshing all data...</p>';
+
+            try {
+                await loadUsers();
+                await loadMultipliers();
+                alert('✅ Panel data refreshed successfully!');
+            } catch (error) {
+                console.error('Error refreshing panel:', error);
+                alert('Error refreshing panel data');
+            }
+        }
+
+        // Force reload users with cache bust
+        async function forceReloadUsers() {
+            if (!isAuthenticated) return;
+
+            document.getElementById('usersList').innerHTML = '<p style="text-align: center; color: #fff;">🔄 Force reloading users...</p>';
+
+            try {
+                // Add a small delay to ensure any pending writes are complete
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                await loadUsers();
+                alert('✅ Users reloaded successfully!');
+            } catch (error) {
+                console.error('Error force reloading users:', error);
+                alert('Error reloading users');
             }
         }
 

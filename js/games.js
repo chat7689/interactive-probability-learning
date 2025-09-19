@@ -1163,6 +1163,11 @@ function endMinesGame(won, message, customMultiplier = null) {
 
 // Helper functions
 async function deductPoints(amount) {
+    // Check session validity before allowing game actions
+    if (window.SessionManager && !window.SessionManager.checkGameAccess()) {
+        return false;
+    }
+
     const success = await RainbetUtils.deductPoints(amount);
     if (!success) {
         alert('Not enough credits! You need ' + amount + ' credits to play.');

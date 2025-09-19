@@ -689,3 +689,107 @@ window.testShopEffect = async function(effectId = 'large_text', tier = 1) {
     console.log('');
     console.log('Usage: testShopEffect("glow_effect", 2)');
 };
+
+// Session Management for preventing game access during timeouts
+class SessionManager {
+    constructor() {
+        this.sessionKey = 'user_session_data';
+        this.timeoutDuration = 30 * 60 * 1000; // 30 minutes
+        this.init();
+    }
+
+    init() {
+        this.updateSession();
+        this.startSessionMonitor();
+    }
+
+    updateSession() {
+        const sessionData = {
+            lastActivity: Date.now(),
+            userId: RainbetUtils.getCurrentUser(),
+            isValid: true
+        };
+        localStorage.setItem(this.sessionKey, JSON.stringify(sessionData));
+    }
+
+    isSessionValid() {
+        try {
+            const sessionData = JSON.parse(localStorage.getItem(this.sessionKey) || '{}');
+            const now = Date.now();
+            const isValid = sessionData.lastActivity &&
+                           (now - sessionData.lastActivity) < this.timeoutDuration &&
+                           sessionData.userId === RainbetUtils.getCurrentUser() &&
+                           sessionData.isValid === true;
+            return isValid;
+        } catch {
+            return false;
+        }
+    }
+
+    invalidateSession() {
+        const sessionData = JSON.parse(localStorage.getItem(this.sessionKey) || '{}');
+        sessionData.isValid = false;
+        localStorage.setItem(this.sessionKey, JSON.stringify(sessionData));
+    }
+
+    startSessionMonitor() {
+        // Check session every minute
+        setInterval(() => {
+            if (!this.isSessionValid()) {
+                this.handleSessionTimeout();
+            }
+        }, 60000);
+
+        // Update session on user activity
+        ['click', 'keypress', 'mousemove'].forEach(event => {
+            document.addEventListener(event, () => {
+                if (this.isSessionValid()) {
+                    this.updateSession();
+                }
+            }, { passive: true });
+        });
+    }
+
+    handleSessionTimeout() {
+        // Prevent game interactions
+        const gameButtons = document.querySelectorAll('.game-btn, .choice-btn');
+        gameButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.title = 'Session expired. Please refresh the page to continue.';
+        });
+
+        // Show timeout message
+        const timeoutMessage = document.createElement('div');
+        timeoutMessage.innerHTML = `
+            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                        background: rgba(231, 76, 60, 0.95); color: white; padding: 20px;
+                        border-radius: 10px; z-index: 10000; text-align: center;">
+                <h3>⏰ Session Expired</h3>
+                <p>Your session has timed out for security reasons.</p>
+                <p>Please refresh the page to continue.</p>
+                <button onclick="location.reload()" style="padding: 10px 20px; background: white;
+                        color: #e74c3c; border: none; border-radius: 5px; cursor: pointer;
+                        font-weight: bold; margin-top: 10px;">Refresh Page</button>
+            </div>
+        `;
+        document.body.appendChild(timeoutMessage);
+    }
+
+    // Method to check before allowing game actions
+    static checkGameAccess() {
+        const session = new SessionManager();
+        if (!session.isSessionValid()) {
+            alert('⏰ Session expired. Please refresh the page to continue playing.');
+            return false;
+        }
+        return true;
+    }
+}
+
+// Initialize session manager when page loads
+if (typeof window !== 'undefined') {
+    window.SessionManager = SessionManager;
+    window.addEventListener('DOMContentLoaded', () => {
+        new SessionManager();
+    });
+}

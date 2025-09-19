@@ -1320,23 +1320,44 @@ async function deleteAccount() {
         
         // Log the account deletion for security
         logSecurityEvent('ACCOUNT_DELETED', currentUser, `Account self-deleted by user`);
-        
-        // Delete all user data
+
+        // Delete all user data from multiple locations
         const userRef = window.firebaseRef(window.firebaseDb, `users/${currentUser}`);
         await window.firebaseSet(userRef, null);
-        
-        // Delete account
+
+        // Delete account credentials
         await window.firebaseSet(accountRef, null);
-        
-        // Add system message about account deletion
-        await RainbetUtils.addSystemMessage(`User ${currentUser} has deleted their account.`);
-        
-        // Log out immediately
-        RainbetUtils.showMessage('Account successfully deleted. You will be logged out.', false, 'settingsMessage');
-        
+
+        // Clean up any online status
+        const onlineRef = window.firebaseRef(window.firebaseDb, `onlineUsers/${currentUser}`);
+        await window.firebaseSet(onlineRef, null);
+
+        // Clean up any admin status if present
+        const adminRef = window.firebaseRef(window.firebaseDb, `admins/${currentUser}`);
+        await window.firebaseSet(adminRef, null);
+
+        // Clear local storage
+        localStorage.removeItem('chat_userdata');
+        localStorage.removeItem('chat_username');
+        localStorage.removeItem('user_session_data');
+
+        // Add system message about account deletion (without username mention to avoid issues)
+        await RainbetUtils.addSystemMessage(`A user account has been permanently deleted.`);
+
+        // Show success message
+        RainbetUtils.showMessage('✅ Account successfully deleted. All data has been permanently removed. You will be logged out.', false, 'settingsMessage');
+
+        // Log out immediately with longer delay to ensure message is seen
         setTimeout(() => {
+            // Clear any remaining session data
+            if (window.SessionManager) {
+                const session = new window.SessionManager();
+                session.invalidateSession();
+            }
             RainbetUtils.logout();
-        }, 2000);
+            // Force page reload to clear any cached data
+            window.location.reload();
+        }, 3000);
         
     } catch (error) {
         console.error('Error deleting account:', error);
